@@ -5,7 +5,6 @@ import { NOMBRE_TIPO, C } from "./srs.js";
 import { horaMadrid, difDias } from "./util.js";
 import { pantallaMedallas, celebrar } from "./medallas_ui.js";
 import { MEDALLAS } from "./logros.js";
-import { vozDisponible, escuchar, dictadoContinuo, partirNumero, MENSAJE_ERROR } from "./voz.js";
 
 const $ = (s) => document.querySelector(s);
 const vista = $("#vista");
@@ -13,9 +12,8 @@ const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "
 const fechaCorta = (iso, hoy) => { const d = difDias(iso, hoy); return d === 0 ? "hoy" : d === 1 ? "mañana" : new Date(iso + "T12:00:00Z").toLocaleDateString("es-ES", { weekday: "short", day: "numeric", month: "short", timeZone: "UTC" }); };
 const fechaLarga = (iso) => new Date(iso + "T12:00:00Z").toLocaleDateString("es-ES", { weekday: "long", day: "numeric", month: "long", timeZone: "UTC" });
 const MODO = { nuevo: "nuevo", repaso: "repaso", practica: "práctica extra" };
-let app, imagenes = null, persistente = null, ultimaRetro = null, escucha = null, autoMicro = false;
-const rafaga = () => false;
-const modoHoja = () => app.datos.prefs?.modo !== "una";
+let app, imagenes = null, persistente = null, ultimaRetro = null;
+
 
 // ---------- arranque ----------
 async function iniciar() {
@@ -57,7 +55,6 @@ function avisar(texto, boton, accion, ms = 0) {
   clearTimeout(avisar.t); if (ms) avisar.t = setTimeout(() => (a.hidden = true), ms);
 }
 function ir(pantalla, ...args) {
-  escucha?.abortar?.(); escucha = null;
   if (!app.tieneProgreso() && !["bienvenida", "progreso"].includes(pantalla)) pantalla = "bienvenida";
   ({ inicio, bienvenida, pregunta, correccion, hoja, resumen, estadisticas, progreso, medallas: () => pantallaMedallas(app, vista) })[pantalla](...args);
   window.scrollTo(0, 0); vista.focus({ preventScroll: true });
@@ -112,11 +109,10 @@ function inicio() {
       <div class="barra-prog"><i style="width:${(100 * e.vistos / e.total).toFixed(1)}%"></i></div>
       <button class="btn" data-ir="estadisticas">Ver estadísticas</button>
     </div>
-    <label class="interruptor"><input type="checkbox" id="modo" ${modoHoja() ? "checked" : ""}> <span><b>Las ${C.SESION_N} preguntas en una pantalla</b> y las correcciones al final. Desactívalo para verlas de una en una.</span></label>
     ${pend ? `<button class="btn peligro" id="abandonar">Descartar la sesión a medias</button>` : ""}
     <p class="suave">Versión ${APP_VERSION} · funciona sin conexión.</p>`;
   $("#empezar").onclick = empezar;
-  $("#modo").onchange = (e) => app.guardarPrefs({ modo: e.target.checked ? "hoja" : "una" });
+
   app.verMedallas().then(celebrar);
   if ($("#abandonar")) $("#abandonar").onclick = async () => {
     if (confirm("¿Descartar esta sesión? Lo que ya corregiste se queda; las preguntas sin contestar volverán a salir más adelante.")) { await app.abandonarSesion(); ir("inicio"); }
@@ -125,7 +121,7 @@ function inicio() {
 async function empezar() {
   const r = await app.sesionActual();
   if (!r.sesion) { avisar("Por ahora no hay preguntas suficientes para otra sesión completa: el ritmo de nuevas está frenado. ¡Por hoy has terminado!", null, null, 6000); return; }
-  ir(modoHoja() ? "hoja" : "pregunta");
+  ir("pregunta");
 }
 
 // ---------- pregunta ----------
@@ -141,60 +137,31 @@ function imgsHTML(it, solucion = false) {
 function puntos(ses, actual) { return `<div class="puntos">${ses.preguntas.map((q) => `<i class="${q.corregida ? "h" : ""} ${q.n === actual ? "a" : ""}"></i>`).join("")}</div>`; }
 function pregunta() {
   const ses = app.sesion(), q = app.preguntaPendiente();
-  if (!q) return ir(rafaga() ? "correccion" : "resumen", 1, true);
-  const it = app.P.get(q.id), tot = ses.preguntas.length, voz = vozDisponible();
+  if (!q) return ir("hoja");
+  const it = app.P.get(q.id), tot = ses.preguntas.length;
   vista.innerHTML = `
     <div class="cabeza"><span class="num">${q.n}/${tot}</span><span class="etiqueta">${esc(NOMBRE_TIPO[it.tipo])}${q.modo === "repaso" ? " · repaso" : ""}</span></div>
     ${puntos(ses, q.n)}
-    <p class="pregunta">${esc(it.pregunta)}</p>
+    <p class="pregunta">${esc(it.tipo === "pais" ? "¿Qué país está marcado en rojo y cuál es su capital?" : it.pregunta)}</p>
     ${imgsHTML(it)}
-    ${voz ? `<div class="voz"><button class="micro" id="micro" aria-label="Responder por voz">🎙️</button>
-      <div class="oido" id="oido">${it.tipo === "pais" ? "Pulsa y di país y capital: «Kenia, Nairobi»" : "Pulsa y di tu respuesta"}</div></div>` : ""}
     <form class="respuesta" id="f" autocomplete="off">
       <input id="r" type="text" enterkeyhint="send" autocomplete="off" autocorrect="off" autocapitalize="sentences" spellcheck="false"
-        placeholder="${voz ? "o escríbela aquí" : it.tipo === "pais" ? "País y capital: «Kenia, Nairobi»" : "Tu respuesta"}" aria-label="Tu respuesta">
-      <button class="btn prim" type="submit">${rafaga() ? "Enviar" : "Corregir"}</button>
+        placeholder="${it.tipo === "pais" ? "País y capital: «Kenia, Nairobi»" : "Tu respuesta"}" aria-label="Tu respuesta">
+      <button class="btn prim" type="submit">${q.n < tot ? "Siguiente" : "Terminar y corregir"}</button>
     </form>
     <button class="btn" id="nose">No lo sé</button>
-    ${voz ? "" : `<p class="suave">Puedes dictar con el micrófono del teclado.</p>`}`;
-  vista.querySelectorAll(".imgs img").forEach((img) => (img.onclick = () => { $("#zoom img").src = img.src; $("#zoom").hidden = false; }));
+    <p class="suave">Las correcciones salen al final, cuando respondas las ${tot}.</p>`;
+  zoomImgs();
   let enviando = false;
   const enviar = async (txt) => {
     if (enviando) return; enviando = true;
-    escucha?.abortar?.(); escucha = null;
     vista.querySelectorAll("button").forEach((b) => (b.disabled = true));
-    try {
-      const r = await app.responder(q.n, txt); ultimaRetro = r;
-      if (rafaga()) {
-        avisar(`${q.n}/${tot} guardada`, null, null, 1200);
-        autoMicro = true; ir("pregunta");
-      } else { ir("correccion", q.n); celebrar(await app.verMedallas()); }
-    } catch (e) { enviando = false; avisar("No se pudo guardar la respuesta: " + e.message, null, null, 8000); vista.querySelectorAll("button").forEach((b) => (b.disabled = false)); }
+    try { await app.responder(q.n, txt); ultimaRetro = null; ir("pregunta"); }
+    catch (e) { enviando = false; avisar("No se pudo guardar la respuesta: " + e.message, null, null, 8000); vista.querySelectorAll("button").forEach((b) => (b.disabled = false)); }
   };
   $("#f").onsubmit = (e) => { e.preventDefault(); const v = $("#r").value.trim(); if (!v) { $("#r").focus(); return; } enviar(v); };
   $("#nose").onclick = () => enviar("no lo sé");
-  if ($("#raf")) $("#raf").onchange = async (e) => { await app.guardarPrefs({ rafaga: e.target.checked }); avisar(e.target.checked ? "Modo ráfaga activado: correcciones al final." : "Verás la corrección después de cada pregunta.", null, null, 2500); };
-  if (!voz) { setTimeout(() => $("#r")?.focus(), 50); return; }
-
-  const oido = $("#oido"), micro = $("#micro");
-  let espera = null;
-  function confirmar(txt) {
-    oido.innerHTML = `Has dicho: <b>«${esc(txt)}»</b><div class="fila"><button class="btn" id="otra">🔁 Repetir</button><button class="btn prim" id="ya">Enviar</button></div><div class="cuenta"><i></i></div>`;
-    espera = setTimeout(() => enviar(txt), 1800);
-    $("#otra").onclick = () => { clearTimeout(espera); iniciar(); };
-    $("#ya").onclick = () => { clearTimeout(espera); enviar(txt); };
-  }
-  function iniciar() {
-    clearTimeout(espera); escucha?.abortar?.();
-    micro.classList.add("activo"); oido.textContent = "Te escucho…";
-    escucha = escuchar({
-      onParcial: (t) => { oido.innerHTML = `<i>${esc(t)}</i>`; },
-      onFinal: (t) => { micro.classList.remove("activo"); $("#r").value = t; confirmar(t); },
-      onError: (c) => { micro.classList.remove("activo"); if (c !== "aborted") oido.textContent = MENSAJE_ERROR[c] ?? "No he podido oírte. Pulsa el micro para repetir."; },
-    });
-  }
-  micro.onclick = () => (micro.classList.contains("activo") ? escucha?.parar?.() : iniciar());
-  if (autoMicro && rafaga()) { autoMicro = false; setTimeout(iniciar, 350); } // en ráfaga, la siguiente empieza a escuchar sola
+  setTimeout(() => $("#r")?.focus(), 50);
 }
 
 // ---------- corrección ----------
@@ -230,7 +197,7 @@ function activarReevaluar(trasReevaluar) {
     ultimaRetro = await app.responder(n, v, { reevaluar: true }); trasReevaluar(n); celebrar(await app.verMedallas());
   }));
 }
-const zoomImgs = () => vista.querySelectorAll(".imgs img").forEach((img) => (img.onclick = () => { $("#zoom img").src = img.src; $("#zoom").hidden = false; }));
+function zoomImgs() { vista.querySelectorAll(".imgs img").forEach((img) => (img.onclick = () => { $("#zoom img").src = img.src; $("#zoom").hidden = false; })); }
 
 function correccion(n, revision = false) {
   const ses = app.sesion(), q = ses.preguntas.find((x) => x.n === n), it = app.P.get(q.id), tot = ses.preguntas.length;
@@ -249,11 +216,11 @@ function correccion(n, revision = false) {
 function hoja(irA = null) {
   const ses = app.sesion();
   if (!ses) return ir("inicio");
-  const tot = ses.preguntas.length, pend = ses.preguntas.filter((q) => !q.corregida), voz = vozDisponible();
+  const tot = ses.preguntas.length, pend = ses.preguntas.filter((q) => !q.corregida);
   const bor = { ...(ses.borradores ?? {}) };
   const ac = ses.preguntas.filter((q) => q.resultado === "correcta").length;
   const cabecera = pend.length
-    ? `<h1>${esc(ses.sesion)} · ${tot} preguntas</h1><p class="suave">${voz ? "Pulsa el micro y ve diciendo las respuestas en orden, con una pausa entre una y otra. También puedes decir el número primero («tres, Francia, París») o escribir en cada caja." : "Escribe o dicta con el teclado la respuesta de cada pregunta."}${ses.preguntas.some((q) => app.P.get(q.id).tipo === "pais") ? " En país y capital, di las dos cosas." : ""}</p>`
+    ? `<h1>${esc(ses.sesion)} · ${tot} preguntas</h1><p class="suave">Escribe la respuesta de cada pregunta y pulsa «Corregir» al final.${ses.preguntas.some((q) => app.P.get(q.id).tipo === "pais") ? " En país y capital, di las dos cosas." : ""}</p>`
     : `<h1>${ac}/${tot} aciertos</h1><p>Aquí tienes las ${tot} correcciones. <a href="#" data-ir="resumen">Ver resumen</a></p>`;
   vista.innerHTML = `${cabecera}
     ${ses.preguntas.map((q) => {
@@ -261,13 +228,12 @@ function hoja(irA = null) {
       return `<section class="preg tarjeta" id="p${q.n}" data-n="${q.n}">
         <div class="cabeza"><span class="num">${q.n}/${tot}</span><span class="etiqueta">${esc(NOMBRE_TIPO[it.tipo])}${q.modo === "repaso" ? " · repaso" : ""}</span></div>
         ${q.corregida ? "" : `<p class="pregunta corta">${esc(it.tipo === "pais" ? "¿Qué país está marcado y cuál es su capital?" : it.pregunta)}</p>${imgsHTML(it)}`}
-        ${q.corregida ? bloqueCorreccion(q.n) : `<input class="caja" id="r${q.n}" data-n="${q.n}" type="text" autocomplete="off" autocorrect="off" spellcheck="false" placeholder="${it.tipo === "pais" ? "País y capital" : "Tu respuesta"}" value="${esc(bor[q.n] ?? "")}">`}
+        ${q.corregida ? bloqueCorreccion(q.n) : `<input class="caja" id="r${q.n}" data-n="${q.n}" type="text" enterkeyhint="next" autocomplete="off" autocorrect="off" spellcheck="false" placeholder="${it.tipo === "pais" ? "País y capital" : "Tu respuesta"}" value="${esc(bor[q.n] ?? "")}">`}
       </section>`;
     }).join("")}
     ${pend.length ? `<div class="espaciador"></div>
     <div class="dock">
-      ${voz ? `<button class="micro" id="micro" aria-label="Dictar respuestas">🎙️</button>` : ""}
-      <div class="oido" id="oido">${voz ? "Pulsa para dictar" : ""}</div>
+      <div class="oido" id="oido"></div>
       <button class="btn prim" id="corregir">Corregir</button>
     </div>` : `<button class="btn prim" data-ir="resumen">Ver resumen</button>`}`;
   zoomImgs();
@@ -280,32 +246,11 @@ function hoja(irA = null) {
   const cajas = () => [...vista.querySelectorAll("input.caja")];
   cajas().forEach((c) => (c.oninput = () => { bor[c.dataset.n] = c.value; c.classList.toggle("llena", !!c.value.trim()); guardarBor(); }));
   cajas().forEach((c) => { c.classList.toggle("llena", !!c.value.trim()); c.onkeydown = (e) => { if (e.key === "Enter") { e.preventDefault(); const sig = cajas().find((x) => !x.value.trim() && x !== c); sig ? sig.focus() : $("#corregir").focus(); } }; });
-  const objetivo = () => cajas().find((x) => !x.value.trim());
-  const marcar = () => { cajas().forEach((x) => x.classList.remove("objetivo")); const o = objetivo(); o?.classList.add("objetivo"); return o; };
 
-  const oido = $("#oido"), micro = $("#micro");
-  function poner(seg) {
-    const { n, texto } = partirNumero(seg, tot);
-    const caja = (n && document.getElementById("r" + n)) || objetivo();
-    if (!caja) { oido.textContent = "Ya están todas. Pulsa «Corregir»."; return; }
-    caja.value = texto; caja.oninput();
-    const sig = marcar();
-    oido.innerHTML = `<b>${caja.dataset.n}/${tot}</b> «${esc(texto)}»`;
-    (sig ? sig.closest("section") : $("#corregir")).scrollIntoView({ behavior: "smooth", block: sig ? "start" : "end" });
-    if (!sig) { escucha?.parar?.(); }
-  }
-  if (micro) micro.onclick = () => {
-    if (escucha?.activo?.()) { escucha.parar(); return; }
-    const o = marcar(); o?.closest("section").scrollIntoView({ behavior: "smooth", block: "start" });
-    escucha = dictadoContinuo({
-      onSegmento: poner,
-      onParcial: (t) => { if (t) oido.innerHTML = `<i>${esc(t)}</i>`; },
-      onError: (c) => { oido.textContent = MENSAJE_ERROR[c] ?? "No he podido oírte."; },
-      onEstado: (on) => { micro.classList.toggle("activo", on); if (!on && objetivo()) oido.textContent = "Micro en pausa. Pulsa para seguir."; },
-    });
-  };
+  const oido = $("#oido");
+  const contar = () => { const n = cajas().filter((c) => c.value.trim()).length; oido.textContent = `${n} de ${pend.length} respondidas`; };
+  cajas().forEach((c) => c.addEventListener("input", contar)); contar();
   $("#corregir").onclick = async () => {
-    escucha?.parar?.();
     const vacias = cajas().filter((c) => !c.value.trim());
     if (vacias.length && !confirm(`Hay ${vacias.length} sin responder (${vacias.map((c) => c.dataset.n).join(", ")}). ¿Las cuento como «no lo sé»?`)) { vacias[0].focus(); return; }
     $("#corregir").disabled = true;
@@ -337,9 +282,9 @@ function resumen() {
     <button class="btn" id="vercorr">Ver las correcciones una a una</button>
     <button class="btn prim" data-ir="inicio">Volver al inicio</button>
     <button class="btn" data-ir="progreso">Descargar copia del progreso</button>`;
-  $("#vercorr").onclick = () => { ultimaRetro = null; modoHoja() ? ir("hoja") : ir("correccion", 1, true); };
+  $("#vercorr").onclick = () => { ultimaRetro = null; ir("hoja"); };
   app.verMedallas().then(celebrar);
-  vista.querySelectorAll("[data-re]").forEach((b) => (b.onclick = () => { ultimaRetro = null; modoHoja() ? ir("hoja", Number(b.dataset.re)) : ir("correccion", Number(b.dataset.re), true); }));
+  vista.querySelectorAll("[data-re]").forEach((b) => (b.onclick = () => { ultimaRetro = null; ir("hoja", Number(b.dataset.re)); }));
 }
 
 // ---------- estadísticas ----------

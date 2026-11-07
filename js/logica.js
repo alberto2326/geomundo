@@ -4,7 +4,7 @@ import { crearSRS, estadoNuevo, C } from "./srs.js";
 import { fechaMadrid, isoMadrid, esFecha, sha256Hex, clonar } from "./util.js";
 import { evaluar, actualizar, CRITERIO_VERSION, porId as medallaPorId } from "./logros.js";
 
-export const APP_VERSION = "1.4.0-beta";
+export const APP_VERSION = "1.5.0-beta";
 export const FORMATO = "geomundo-progreso";
 export const VERSION_FORMATO = 1;
 const CONTADOR_ORIGEN = 75; // la última sesión del sistema original fue ses-0075

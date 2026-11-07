@@ -9,14 +9,8 @@ Entrenador diario de geografía en español: país + capital, banderas, geograf�
 - **Sesión del día**: la app no puede despertarse sola. A partir de las 07:00 (hora de Madrid) la pantalla de inicio la ofrece como lista, aunque se puede empezar antes. Una sesión a medias se conserva y se retoma siempre, aunque cierres el navegador.
 - **Reevaluar**: si el dictado se equivoca, se deshace la corrección anterior (se restaura el registro previo) y se puntúa la respuesta nueva. Nunca regala aciertos.
 
-## Responder por voz
-- **Hoja de 10**, el modo por defecto: las diez preguntas salen en una sola pantalla.
-  - Pulsas el micro una vez y dices las respuestas seguidas, con una pausa entre una y otra. Cada pausa rellena la siguiente caja.
-  - Puedes decir el número delante («tres, Francia, París») para ir a una pregunta concreta.
-  - Al pulsar «Corregir» salen las diez correcciones.
-  - Lo dictado se guarda aunque cierres la app.
-- **De una en una**: se activa desmarcando la opción en el inicio.
-- El reconocimiento de voz lo hace el navegador (en Chrome, Google), así que necesita conexión. La corrección siempre es local.
+## Cómo se responde
+Una pregunta por pantalla: escribes la respuesta (o la dictas con el micrófono del teclado) y pasas a la siguiente sin ver si acertaste. Al terminar las 10, salen todas las correcciones juntas, cada una con su N/10, el dato curioso, el mapa solución si fallaste y el botón de reevaluar.
 
 ## Rachas y medallas (`js/logros.js`)
 - **Racha**: cada día con al menos una respuesta suma un día. Hay medallas a los 3, 7, 14, 30, 50, 100, 200, 365, 500 y 1000 días, y se guarda tu récord.
