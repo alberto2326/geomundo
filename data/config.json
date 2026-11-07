@@ -1,0 +1,6 @@
+{
+ "modo": "beta",
+ "nombre": "Beta · países y capitales",
+ "tipos": ["pais"],
+ "mezcla": {"pais": 10}
+}

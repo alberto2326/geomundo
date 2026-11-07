@@ -1,0 +1,981 @@
+{
+"formato": "geomundo-imagenes",
+"version": "beta195-2026-11-07",
+"items": {
+"pc-es": {
+"q": "img/f/02300c7ef4e6cf5f51cd.webp",
+"c": "img/f/9f3bfc0958acb596fe9b.webp",
+"a": "img/f/34c32f813037aa8cfe2d.webp"
+},
+"pc-fr": {
+"q": "img/f/cb8fc80a8c403315fdfe.webp",
+"c": "img/f/898d44ae5cdd001a3fd1.webp",
+"a": "img/f/0ccc4c6431ef0651a471.webp"
+},
+"pc-it": {
+"q": "img/f/fee646b08e83d8cf9a8b.webp",
+"c": "img/f/1394f997fb5a65941031.webp",
+"a": "img/f/51a3fef9c530992caa8e.webp"
+},
+"pc-us": {
+"q": "img/f/9239494fe835e270275c.webp",
+"c": "img/f/2b3784be6d4dbcb30c10.webp",
+"a": "img/f/b6e2497f6e481d18b547.webp"
+},
+"pc-jp": {
+"q": "img/f/9d18ba72aba2ac738f9f.webp",
+"c": "img/f/429320e41075ae7a99e7.webp",
+"a": "img/f/00f2ef30578989da5e3c.webp"
+},
+"pc-br": {
+"q": "img/f/0ddd6d52f4797ec185ed.webp",
+"c": "img/f/61ce9cf5e9c3e63c3202.webp",
+"a": "img/f/e9c4ce1605082ca468c2.webp"
+},
+"pc-gb": {
+"q": "img/f/3fa6645367dddf22287e.webp",
+"c": "img/f/b1ad0da945b895760396.webp",
+"a": "img/f/70dd3dac515887d35e72.webp"
+},
+"pc-de": {
+"q": "img/f/7f58b357ce8299560bf1.webp",
+"c": "img/f/7229eb8bdb410bf3acfe.webp",
+"a": "img/f/aa5dbd2d6b86224802a9.webp"
+},
+"pc-ca": {
+"q": "img/f/057335e6de88071d316f.webp",
+"c": "img/f/4706320f41bc153b2767.webp",
+"a": "img/f/cbb781b3df4bf2f2817a.webp"
+},
+"pc-mx": {
+"q": "img/f/649836e66a494b8682d2.webp",
+"c": "img/f/7e6caa403391cc26665e.webp",
+"a": "img/f/7f4fbf8dbdbf2d3bde34.webp"
+},
+"pc-pt": {
+"q": "img/f/dfc44f04acaac8f55c06.webp",
+"c": "img/f/30d60c394d51433e3f57.webp",
+"a": "img/f/b8929023a1dd2ac7b68f.webp"
+},
+"pc-ar": {
+"q": "img/f/861563e79a06c3cf0eaf.webp",
+"c": "img/f/b1e20612db5be9a520e1.webp",
+"a": "img/f/36b9c5a80f0088d5f7ff.webp"
+},
+"pc-cn": {
+"q": "img/f/0155c4872586af05767a.webp",
+"c": "img/f/121477f8d7063a279a06.webp",
+"a": "img/f/2153338a15e366045508.webp"
+},
+"pc-ru": {
+"q": "img/f/1a8f17fcdf6fc49a2916.webp",
+"c": "img/f/32db483ca65b694a0a31.webp",
+"a": "img/f/83222987d003e540153f.webp"
+},
+"pc-in": {
+"q": "img/f/a7bdd34583a7e4c39594.webp",
+"c": "img/f/7963bc46941fd9c65a3b.webp",
+"a": "img/f/cd6b17e03c5ce795dbfa.webp"
+},
+"pc-au": {
+"q": "img/f/642d4b82e0d3bf8448cf.webp",
+"c": "img/f/ec212d71cfd67467c70c.webp",
+"a": "img/f/afa3e19c7d2c874c35a6.webp"
+},
+"pc-nl": {
+"q": "img/f/95bc53534dff6a6c9d98.webp",
+"c": "img/f/765ec2cf2e9d6250dbd2.webp",
+"a": "img/f/6eab271745e811993e66.webp"
+},
+"pc-be": {
+"q": "img/f/430c907abea90d73cad3.webp",
+"c": "img/f/a74d4bdf07e1c1cf88c4.webp",
+"a": "img/f/904a2745cdcaaa9d2991.webp"
+},
+"pc-ch": {
+"q": "img/f/977eae758e76d56e27b0.webp",
+"c": "img/f/af2cb747448794a3c619.webp",
+"a": "img/f/fa4faed5a090aef1da94.webp"
+},
+"pc-se": {
+"q": "img/f/9586952440ea7d0b6f5e.webp",
+"c": "img/f/c2374987906755792f11.webp",
+"a": "img/f/61ba68cc9a3bd48b7c1d.webp"
+},
+"pc-no": {
+"q": "img/f/f11b30ebf58932ace6e6.webp",
+"c": "img/f/fcbb030efb45c5dc68f9.webp",
+"a": "img/f/a3c71c0cd99a12b62aab.webp"
+},
+"pc-dk": {
+"q": "img/f/e222c0068f296ab3f0b1.webp",
+"c": "img/f/4fa2b10c174c0abe38bd.webp",
+"a": "img/f/354f46375c8f40924bbd.webp"
+},
+"pc-fi": {
+"q": "img/f/b6714ad53c2e3dfa8705.webp",
+"c": "img/f/a48d38ee5d1777d5f068.webp",
+"a": "img/f/056f009907c9d4792187.webp"
+},
+"pc-ie": {
+"q": "img/f/d48c2b4abb5dff88a6cc.webp",
+"c": "img/f/5fe0aa1b5517a0d1c0fb.webp",
+"a": "img/f/d9f84de24163d8f415ca.webp"
+},
+"pc-gr": {
+"q": "img/f/8413c1fd429be58412b2.webp",
+"c": "img/f/e27c4e8f523546325fe6.webp",
+"a": "img/f/ea31b2d88480c4b52cf5.webp"
+},
+"pc-tr": {
+"q": "img/f/d61b20be546313281724.webp",
+"c": "img/f/738390bc71e272c80f7e.webp",
+"a": "img/f/190f83b06d83f618bcde.webp"
+},
+"pc-kr": {
+"q": "img/f/d5a6de586084992f2fc4.webp",
+"c": "img/f/fc72176fc5bc79ca2939.webp",
+"a": "img/f/70c736d35236ba1f9434.webp"
+},
+"pc-cu": {
+"q": "img/f/6fad77869572999fa0f7.webp",
+"c": "img/f/0700705d01c563373924.webp",
+"a": "img/f/aeeb2ee79e85f28d9581.webp"
+},
+"pc-co": {
+"q": "img/f/1695c52f80f7b81e8acf.webp",
+"c": "img/f/04cb108ffaf66cdadae1.webp",
+"a": "img/f/cfbb32140ac050feab60.webp"
+},
+"pc-cl": {
+"q": "img/f/0ed3abdee55e6865ef63.webp",
+"c": "img/f/1236bceca864af4ad13c.webp",
+"a": "img/f/6030bce16493ed7564cc.webp"
+},
+"pc-pe": {
+"q": "img/f/e41dafc592f343028340.webp",
+"c": "img/f/1d8452e38401cf2c95da.webp",
+"a": "img/f/17608001e72df75d86c0.webp"
+},
+"pc-eg": {
+"q": "img/f/57dceb5e34961277389e.webp",
+"c": "img/f/a2ac3b3ec187c5a9ae52.webp",
+"a": "img/f/63c66597b89fdda27432.webp"
+},
+"pc-za": {
+"q": "img/f/3f8c72e35f14cdeb947c.webp",
+"c": "img/f/d46ab9061337ddeb64b1.webp",
+"a": "img/f/de83409285785e77c593.webp"
+},
+"pc-at": {
+"q": "img/f/513862df79840d878cf5.webp",
+"c": "img/f/3484387748791098bb9f.webp",
+"a": "img/f/e7a9bb3880935428be06.webp"
+},
+"pc-pl": {
+"q": "img/f/c7cc5a6ed0f880fbb000.webp",
+"c": "img/f/09f1b053b7c2fd93ca28.webp",
+"a": "img/f/105c5d578a7045e94b0d.webp"
+},
+"pc-ua": {
+"q": "img/f/1ea86785799ebc6926e7.webp",
+"c": "img/f/f651f34fe66f8e31e782.webp",
+"a": "img/f/6769ec4583196919d390.webp"
+},
+"pc-sa": {
+"q": "img/f/21950fcdb8d93e822991.webp",
+"c": "img/f/11059cbd4ed16d21b038.webp",
+"a": "img/f/0a60fc408a3ff7532ec8.webp"
+},
+"pc-il": {
+"q": "img/f/d9dc1238320a1763c50a.webp",
+"c": "img/f/acdf934163a337380ecb.webp",
+"a": "img/f/827ccffd4c01aebe829d.webp"
+},
+"pc-ma": {
+"q": "img/f/c42f4184ef9e3e2f95cb.webp",
+"c": "img/f/77f5c9d1eb5b36a03bf6.webp",
+"a": "img/f/4183335023b14ef8f3c8.webp"
+},
+"pc-ve": {
+"q": "img/f/62f6bc09beabf8aeb797.webp",
+"c": "img/f/2ce537ed74902109393e.webp",
+"a": "img/f/6c9b7497f256143c9d93.webp"
+},
+"pc-uy": {
+"q": "img/f/76f90293917a8aaf5c6c.webp",
+"c": "img/f/8a988fd47bbc9df4e2d7.webp",
+"a": "img/f/4f3c145819ac2c81cccd.webp"
+},
+"pc-ec": {
+"q": "img/f/156c97f2fbc353844991.webp",
+"c": "img/f/77e5051570d0384f36a9.webp",
+"a": "img/f/dc77814f5af04f4795ff.webp"
+},
+"pc-bo": {
+"q": "img/f/7f92fd5dfbede00462aa.webp",
+"c": "img/f/e7e6021761eede2ca634.webp",
+"a": "img/f/c92f1220f8f13329eb68.webp"
+},
+"pc-py": {
+"q": "img/f/0117b7dc3a1c6bfead32.webp",
+"c": "img/f/ca607a328a932417e7e9.webp",
+"a": "img/f/c5ba16963d400c91fea4.webp"
+},
+"pc-cz": {
+"q": "img/f/faed19d7a27fefe9a569.webp",
+"c": "img/f/ea4f8210bc11f61938c3.webp",
+"a": "img/f/ea495adbf2ac8fc14218.webp"
+},
+"pc-hu": {
+"q": "img/f/72d10063e811961b71e8.webp",
+"c": "img/f/71944d7ec44f24798ddb.webp",
+"a": "img/f/2cea79dcf4375689ca3b.webp"
+},
+"pc-ro": {
+"q": "img/f/c4a8e6c88d2ea10b4003.webp",
+"c": "img/f/e8fc1b957a18a80daca0.webp",
+"a": "img/f/25626ca4355a4303d7a4.webp"
+},
+"pc-bg": {
+"q": "img/f/924c2fa7c3109db3a7f1.webp",
+"c": "img/f/77a619e572e10651b9c9.webp",
+"a": "img/f/de30a1d4445f5c806eb9.webp"
+},
+"pc-hr": {
+"q": "img/f/467a38817a02e6af3c96.webp",
+"c": "img/f/4a432ef5ce223c7c34ae.webp",
+"a": "img/f/c69fb1d12dcdc026301b.webp"
+},
+"pc-rs": {
+"q": "img/f/4769d783d951d7cd0a01.webp",
+"c": "img/f/81aecb8f5ac81a351873.webp",
+"a": "img/f/24bbd8dc494f6761f3a9.webp"
+},
+"pc-sk": {
+"q": "img/f/93634f3d62104f3dac4b.webp",
+"c": "img/f/77800a4b86a4c88ae37a.webp",
+"a": "img/f/b5df84e77c3300441fdf.webp"
+},
+"pc-si": {
+"q": "img/f/3983adf5ef024acd35a5.webp",
+"c": "img/f/9b7de93511cd1a7136da.webp",
+"a": "img/f/c7b1b9f28cb8b0697ce8.webp"
+},
+"pc-is": {
+"q": "img/f/3e99d65e31968e892190.webp",
+"c": "img/f/43f8ac4e8dadc5b4494b.webp",
+"a": "img/f/f2dfadd8cffdb3b2e2cd.webp"
+},
+"pc-lu": {
+"q": "img/f/5b8c129215dbef02538b.webp",
+"c": "img/f/4db5cabf3f0fad751e9c.webp",
+"a": "img/f/5c3bcef5f893b600c5c9.webp"
+},
+"pc-mc": {
+"q": "img/f/2e1230bc7723a2cd1506.webp",
+"c": "img/f/68a561172d027df533b7.webp",
+"a": "img/f/702ba74da519baadb1f9.webp"
+},
+"pc-ad": {
+"q": "img/f/b2f82754432a042fdad2.webp",
+"c": "img/f/93558aa40f0fea0b31db.webp",
+"a": "img/f/f8e2c464c6a74ee220cf.webp"
+},
+"pc-cy": {
+"q": "img/f/9bd8a5381afa20f50dfc.webp",
+"c": "img/f/c4c2fd38a00720b42904.webp",
+"a": "img/f/abd83c995c2fd00ac64b.webp"
+},
+"pc-pk": {
+"q": "img/f/3a92ebf1626453ac9582.webp",
+"c": "img/f/c7c4596383f111323ee2.webp",
+"a": "img/f/78e9e290c2ffa23e20bb.webp"
+},
+"pc-bd": {
+"q": "img/f/f81edbb44c743c9078bf.webp",
+"c": "img/f/a947b3704b36dab4262c.webp",
+"a": "img/f/3889d5963cd90740d212.webp"
+},
+"pc-th": {
+"q": "img/f/ca5a1fa4b3a119d13040.webp",
+"c": "img/f/87164aa1e736afe811cf.webp",
+"a": "img/f/c2dac21d5a8895bbf2e4.webp"
+},
+"pc-vn": {
+"q": "img/f/e15bd431377f3e096f76.webp",
+"c": "img/f/50a67d36a663a5b89a34.webp",
+"a": "img/f/5e9b00f175fce89f61bf.webp"
+},
+"pc-id": {
+"q": "img/f/4e84c655fde55b428d6a.webp",
+"c": "img/f/9fbcd4e5fa45a3e3ecdc.webp",
+"a": "img/f/d23541042f6342e1ca46.webp"
+},
+"pc-ph": {
+"q": "img/f/01650ad35f51ab1d2c44.webp",
+"c": "img/f/14824923943bcb8cdf8f.webp",
+"a": "img/f/ab238ea666ddfcfbb58a.webp"
+},
+"pc-my": {
+"q": "img/f/446e1eeda67f62ee795d.webp",
+"c": "img/f/ac54421e864cf30620d4.webp",
+"a": "img/f/c46805a4b2561ce2072c.webp"
+},
+"pc-sg": {
+"q": "img/f/ab3a6c31219a123cf34c.webp",
+"c": "img/f/20b9a7fefb08fdb80b8d.webp",
+"a": "img/f/5baa3cb76948b0c88eb6.webp"
+},
+"pc-nz": {
+"q": "img/f/9cd99cbc5519211cf430.webp",
+"c": "img/f/62f78942f76a66268561.webp",
+"a": "img/f/b7d98b65c056476f0aa2.webp"
+},
+"pc-ir": {
+"q": "img/f/6f09590a9b7df5566519.webp",
+"c": "img/f/3cafdf77b9fa5e7e6afd.webp",
+"a": "img/f/1a07ff10beeb376fbe3a.webp"
+},
+"pc-iq": {
+"q": "img/f/0e91ab3a4ea51da6ce2a.webp",
+"c": "img/f/4bde2b51660e0099e0e2.webp",
+"a": "img/f/d0b141481cad4497390b.webp"
+},
+"pc-jo": {
+"q": "img/f/54a46e9292e328d03f57.webp",
+"c": "img/f/d5842a217e808a1198d4.webp",
+"a": "img/f/39241f835e7ed72701df.webp"
+},
+"pc-lb": {
+"q": "img/f/118f71f9254f3c918fd6.webp",
+"c": "img/f/0aa5c1dbffd60954f902.webp",
+"a": "img/f/7fcfd9e32f41ff8d438e.webp"
+},
+"pc-ae": {
+"q": "img/f/e747d87e7244c8d33a1b.webp",
+"c": "img/f/6c20320bbc721e9bbc0a.webp",
+"a": "img/f/dc86ee7c4f7a3a69b1b9.webp"
+},
+"pc-qa": {
+"q": "img/f/f0b02605af5a3151667c.webp",
+"c": "img/f/7fe003b5f3ffa9ab551b.webp",
+"a": "img/f/4ae4c4e52420bfb7c023.webp"
+},
+"pc-dz": {
+"q": "img/f/22340a900dc4cfe5d1cd.webp",
+"c": "img/f/45d79fff1db716797ef2.webp",
+"a": "img/f/70845db2032ff796f65f.webp"
+},
+"pc-tn": {
+"q": "img/f/4c027b124eca1d49832f.webp",
+"c": "img/f/b58b5244a4e80b658744.webp",
+"a": "img/f/cd46b7402539a6754042.webp"
+},
+"pc-ng": {
+"q": "img/f/10c74ca83826ad86da9c.webp",
+"c": "img/f/e410de0ab3ed0eb45219.webp",
+"a": "img/f/6e6928427d2bf71dff0d.webp"
+},
+"pc-ke": {
+"q": "img/f/6404313821e55502a18b.webp",
+"c": "img/f/bb91f25475cae3888226.webp",
+"a": "img/f/97665d6c80770f944f04.webp"
+},
+"pc-et": {
+"q": "img/f/dd15a9e49efc96d8ae3d.webp",
+"c": "img/f/8c9de494aa90937c9e45.webp",
+"a": "img/f/76d387496cba2595b72e.webp"
+},
+"pc-gh": {
+"q": "img/f/59e94009067ff9f65850.webp",
+"c": "img/f/b0d7c7b2731dde2c6568.webp",
+"a": "img/f/76eceaff57b5fe687e36.webp"
+},
+"pc-ci": {
+"q": "img/f/8fa54a5814a380b84fa8.webp",
+"c": "img/f/f71de476c6df2b8b17be.webp",
+"a": "img/f/47f01f1c69b6df5b1515.webp"
+},
+"pc-do": {
+"q": "img/f/25bdd624fd3c80f72ba3.webp",
+"c": "img/f/66b8a7057be2f2e8ee29.webp",
+"a": "img/f/4f4f59c787972675a379.webp"
+},
+"pc-pa": {
+"q": "img/f/9c3e6c01a3dc48c0a7b3.webp",
+"c": "img/f/e535fb950670f43005b7.webp",
+"a": "img/f/3aa7c403b09fa208744a.webp"
+},
+"pc-cr": {
+"q": "img/f/5c30d6cede07d9824641.webp",
+"c": "img/f/7d947614c13f5a45b42a.webp",
+"a": "img/f/e0183095005acf06b0c5.webp"
+},
+"pc-gt": {
+"q": "img/f/2855f63e6dc95bc0db9d.webp",
+"c": "img/f/7b0217e20d92dc636cbe.webp",
+"a": "img/f/fd61ce3ed9b9fc281ca8.webp"
+},
+"pc-jm": {
+"q": "img/f/f371d6697bde8087c3e7.webp",
+"c": "img/f/f1a1505817ea5b06a5b7.webp",
+"a": "img/f/1cebead94ee8991be692.webp"
+},
+"pc-hn": {
+"q": "img/f/307ff022b7b6d26d157a.webp",
+"c": "img/f/d7728f5997c74d00c8cb.webp",
+"a": "img/f/83edd6adb6547b439a0c.webp"
+},
+"pc-sv": {
+"q": "img/f/24436d220202b9030ec7.webp",
+"c": "img/f/71490be214e67986dbcc.webp",
+"a": "img/f/e1c8ebecdb07e3ee4c2a.webp"
+},
+"pc-ni": {
+"q": "img/f/cc8ba49cf9254f6bcd4d.webp",
+"c": "img/f/962f81725e09c7efc443.webp",
+"a": "img/f/67a8ae50a22d6885e7e3.webp"
+},
+"pc-ht": {
+"q": "img/f/79f505d2b1914d076457.webp",
+"c": "img/f/46d5fa5788e4e7912d7d.webp",
+"a": "img/f/2b5b2282ad2612734bc3.webp"
+},
+"pc-bs": {
+"q": "img/f/189aaafd448354b86c0d.webp",
+"c": "img/f/65c2cbe16e8d2e40d3fd.webp",
+"a": "img/f/9389d3b7ac9c8be2b599.webp"
+},
+"pc-gy": {
+"q": "img/f/e27a4d8bdb625bc59509.webp",
+"c": "img/f/bfa6724be4da9bc31f19.webp",
+"a": "img/f/228bb03d78ea9f0299cf.webp"
+},
+"pc-sr": {
+"q": "img/f/5ef6302599e453440584.webp",
+"c": "img/f/e56a020f2351f20e5c5b.webp",
+"a": "img/f/7114c3c78a0cf3671da8.webp"
+},
+"pc-tt": {
+"q": "img/f/3cce87ee35f9d720da4b.webp",
+"c": "img/f/3236c297bee753259079.webp",
+"a": "img/f/47d6110a557d3c4a4a5b.webp"
+},
+"pc-fj": {
+"q": "img/f/af9de96f7ceb6f734d20.webp",
+"c": "img/f/1c73a4beb0be0432e7b6.webp",
+"a": "img/f/08aef71df34a76ceefe0.webp"
+},
+"pc-pg": {
+"q": "img/f/dd76ffcd94318363c33d.webp",
+"c": "img/f/e19d6ce7a9ccb2610cfc.webp",
+"a": "img/f/770050dd9c9eb2fb5b4d.webp"
+},
+"pc-ws": {
+"q": "img/f/9d66180a09615d74dfb0.webp",
+"c": "img/f/de3741d25534ce300de9.webp",
+"a": "img/f/37b8e68877285aac60e5.webp"
+},
+"pc-to": {
+"q": "img/f/446652b4acdf14d1b0dd.webp",
+"c": "img/f/3534a88639dccd7f029d.webp",
+"a": "img/f/7c21dc32fa2f6d3df5d0.webp"
+},
+"pc-ao": {
+"q": "img/f/eea494e8e1422003a746.webp",
+"c": "img/f/55765ff66fe255b8980b.webp",
+"a": "img/f/b86106a1c9e582ddca67.webp"
+},
+"pc-cm": {
+"q": "img/f/cafbf86129c9d9c77b01.webp",
+"c": "img/f/ebca66a6ba283e173ae1.webp",
+"a": "img/f/90941bba987cffc2335e.webp"
+},
+"pc-td": {
+"q": "img/f/9c8cfa8bd348db1f92f6.webp",
+"c": "img/f/17f2f872e7d47c2b513b.webp",
+"a": "img/f/321fd1ad5a01d5ba6719.webp"
+},
+"pc-cg": {
+"q": "img/f/e9f9bded9ccaf4d6bb11.webp",
+"c": "img/f/b21a041decad52d80220.webp",
+"a": "img/f/edc70cc32c88f4ad5ef8.webp"
+},
+"pc-cd": {
+"q": "img/f/bab70f8205958d5f5323.webp",
+"c": "img/f/27498a7a0f63191b2df8.webp",
+"a": "img/f/9750951db7ffd5feee88.webp"
+},
+"pc-ly": {
+"q": "img/f/e7ff59106596c1ca2578.webp",
+"c": "img/f/5e2b3b2259bf063243e2.webp",
+"a": "img/f/4085fcfd27386b946b14.webp"
+},
+"pc-lr": {
+"q": "img/f/d10b733bffc90972f117.webp",
+"c": "img/f/06c19e1b538df465f8f3.webp",
+"a": "img/f/adbcb5866717b8d4906e.webp"
+},
+"pc-mg": {
+"q": "img/f/25ac8bc35731fecec75f.webp",
+"c": "img/f/3ff94d7c48f70c875a54.webp",
+"a": "img/f/fde81e89746b6dd38bf3.webp"
+},
+"pc-ml": {
+"q": "img/f/4d9f9e94d98efb9aea7e.webp",
+"c": "img/f/a4b00be269ad57b6e525.webp",
+"a": "img/f/36fba20e560ef3620a14.webp"
+},
+"pc-na": {
+"q": "img/f/faaf803bf8476c9912f3.webp",
+"c": "img/f/c569160fc07a8e7af75f.webp",
+"a": "img/f/596517b656b3d9cd3ba3.webp"
+},
+"pc-ne": {
+"q": "img/f/498d9280b7178d693369.webp",
+"c": "img/f/23afb74d1cbddac379f8.webp",
+"a": "img/f/f2087f0305f67c94f756.webp"
+},
+"pc-sn": {
+"q": "img/f/871dcbcfbd80347d556f.webp",
+"c": "img/f/7d9cd7013d060c17aa42.webp",
+"a": "img/f/f626621f9e2fb3ae877a.webp"
+},
+"pc-so": {
+"q": "img/f/94e35d4ce51ab9122b3b.webp",
+"c": "img/f/bed768d1b463a969c823.webp",
+"a": "img/f/a3243cde18b6306aa641.webp"
+},
+"pc-sd": {
+"q": "img/f/304bc000b4595ecea515.webp",
+"c": "img/f/7320593423e49e09f7ae.webp",
+"a": "img/f/15a1819cf1a44be31ad5.webp"
+},
+"pc-tz": {
+"q": "img/f/c9f36d51f1c5da8ae2e5.webp",
+"c": "img/f/ebfff5eee2886b4eddca.webp",
+"a": "img/f/28f212362993d8783f7e.webp"
+},
+"pc-ug": {
+"q": "img/f/7145c26541e9086f784c.webp",
+"c": "img/f/b59c09294b837341428b.webp",
+"a": "img/f/0fb28ff1803daadca46c.webp"
+},
+"pc-zw": {
+"q": "img/f/7d5a88f99e36eaf99aab.webp",
+"c": "img/f/345c824d68133e814201.webp",
+"a": "img/f/76efe64d171847e5a45a.webp"
+},
+"pc-af": {
+"q": "img/f/33e4bc9839f3f3a71a07.webp",
+"c": "img/f/9c75eb5f8b1d6ad7b6cd.webp",
+"a": "img/f/b2ba1111a391d7a8857a.webp"
+},
+"pc-sy": {
+"q": "img/f/ba7512bf22c8617fe152.webp",
+"c": "img/f/e2da581632411f0cf6af.webp",
+"a": "img/f/b68b8da1f50b6a66c661.webp"
+},
+"pc-ye": {
+"q": "img/f/e30c9fec80847fbdfa77.webp",
+"c": "img/f/26a40394001ce6caaf17.webp",
+"a": "img/f/936997f326ecb0ca750f.webp"
+},
+"pc-om": {
+"q": "img/f/a7d47f0cfcd6e4ce1e27.webp",
+"c": "img/f/5c00d8f8868e1e488ebd.webp",
+"a": "img/f/1357bdcd630497290534.webp"
+},
+"pc-bh": {
+"q": "img/f/9b8e9232236e06e8231f.webp",
+"c": "img/f/8cf67765a53909a75c33.webp",
+"a": "img/f/43d0be46b24aade6771e.webp"
+},
+"pc-kw": {
+"q": "img/f/6d9575f5ea2d073d54c9.webp",
+"c": "img/f/05a9f848371de0cada95.webp",
+"a": "img/f/b11cbd13a5c147316e9b.webp"
+},
+"pc-ge": {
+"q": "img/f/e3f9c3600aadd193eaa9.webp",
+"c": "img/f/001d781a8041bcfd426f.webp",
+"a": "img/f/79de4ba118604173dba8.webp"
+},
+"pc-am": {
+"q": "img/f/45c3e987f2a83fc36865.webp",
+"c": "img/f/55b674152b5dbd01bf47.webp",
+"a": "img/f/b49c99cf6e2b4b28c3ed.webp"
+},
+"pc-az": {
+"q": "img/f/602778084aeb1ecdc749.webp",
+"c": "img/f/8b114a4a3b9a2135db5e.webp",
+"a": "img/f/33130099b67752c9d711.webp"
+},
+"pc-kz": {
+"q": "img/f/29de94e4ecf56c7e9528.webp",
+"c": "img/f/2f02dfa5ca04412335bc.webp",
+"a": "img/f/632d5d81ce97aa953a29.webp"
+},
+"pc-uz": {
+"q": "img/f/9d1830369f48894df5dd.webp",
+"c": "img/f/1679ee9522067e954112.webp",
+"a": "img/f/5a93a48f567a9105cdbd.webp"
+},
+"pc-mn": {
+"q": "img/f/3425de47b1c12535113e.webp",
+"c": "img/f/7900a985f94bd4bd5a7b.webp",
+"a": "img/f/976aa5c8679f9b48140c.webp"
+},
+"pc-kh": {
+"q": "img/f/22f8f6d8f2c5aca1aa0c.webp",
+"c": "img/f/c704346538d9a203cb34.webp",
+"a": "img/f/d50796b030397eaf69a1.webp"
+},
+"pc-mm": {
+"q": "img/f/de0018581f0bf40a7141.webp",
+"c": "img/f/fd76c5a6cdf2f37281ae.webp",
+"a": "img/f/4d9352bba18359887044.webp"
+},
+"pc-la": {
+"q": "img/f/fd01049e826af5599e83.webp",
+"c": "img/f/0142e567e53b7f50b011.webp",
+"a": "img/f/39456effbcfef00d8a62.webp"
+},
+"pc-lk": {
+"q": "img/f/17b690c60e64c5581dca.webp",
+"c": "img/f/1aebe52d65685d5a1579.webp",
+"a": "img/f/9db861af1340894ca097.webp"
+},
+"pc-np": {
+"q": "img/f/a3bef1f10b61026a0a0a.webp",
+"c": "img/f/54d093d349683b9943c0.webp",
+"a": "img/f/ace2d09dad3f6c6c4907.webp"
+},
+"pc-kp": {
+"q": "img/f/f550dfbdb156bfb2947a.webp",
+"c": "img/f/9f86ee860f71e873dfde.webp",
+"a": "img/f/51c89f81e62a4fab1f94.webp"
+},
+"pc-by": {
+"q": "img/f/8e84847e50176e1652eb.webp",
+"c": "img/f/af7c21f459f49b15078b.webp",
+"a": "img/f/0763a5660aa2722ec42e.webp"
+},
+"pc-md": {
+"q": "img/f/11aa89bb73c56806a83e.webp",
+"c": "img/f/d75d9ea9e9dd3c0f227d.webp",
+"a": "img/f/5d8ed84a0bc9c84846b3.webp"
+},
+"pc-ba": {
+"q": "img/f/af6227101baa42a7c82a.webp",
+"c": "img/f/110994952df2cb6fcd95.webp",
+"a": "img/f/40e436b1d9ef68b4e7ca.webp"
+},
+"pc-me": {
+"q": "img/f/498fc2f830ad68d0ef72.webp",
+"c": "img/f/63a387241a3091d2b6f2.webp",
+"a": "img/f/323b0afb4a0217287954.webp"
+},
+"pc-mk": {
+"q": "img/f/e3a046dedd279f1557ed.webp",
+"c": "img/f/2d2d9c16f13dd8e1ac43.webp",
+"a": "img/f/af9101e49f0f276471bf.webp"
+},
+"pc-al": {
+"q": "img/f/329b3db0e30a10f34172.webp",
+"c": "img/f/bb209219d2fbda68357a.webp",
+"a": "img/f/77b05e951bbeee7f98bb.webp"
+},
+"pc-ee": {
+"q": "img/f/3c0f9457e275bb3a9699.webp",
+"c": "img/f/1c97ceed89c4012972dc.webp",
+"a": "img/f/7743ad5d3513c1f1cc5c.webp"
+},
+"pc-lv": {
+"q": "img/f/d8912292dcae3befeb5a.webp",
+"c": "img/f/e59b347b030e4b9a1ece.webp",
+"a": "img/f/d4c8912f8fce1685bef0.webp"
+},
+"pc-lt": {
+"q": "img/f/fee1aee2844446e52d48.webp",
+"c": "img/f/7be420673dcb11d71c23.webp",
+"a": "img/f/4311e84fb3ba1d1220a0.webp"
+},
+"pc-mt": {
+"q": "img/f/2bb786078b0926ca0208.webp",
+"c": "img/f/a147007d9de0b23ee420.webp",
+"a": "img/f/2b976cd64c9ed17f1ef9.webp"
+},
+"pc-sm": {
+"q": "img/f/d32e2ec8246b00bbb52e.webp",
+"c": "img/f/1b978b9ccd16d1d39ce6.webp",
+"a": "img/f/a2e68dc85beb6153254e.webp"
+},
+"pc-li": {
+"q": "img/f/b5a5faacfe1034bf8b06.webp",
+"c": "img/f/90e53e6718eec3c63f45.webp",
+"a": "img/f/b84acfef3ccf28fe4c01.webp"
+},
+"pc-tl": {
+"q": "img/f/a71c3f846ec7e049ca16.webp",
+"c": "img/f/7ac36e01163aea54eae8.webp",
+"a": "img/f/c3ab6a2e1c32957ef1fb.webp"
+},
+"pc-bn": {
+"q": "img/f/30643e89c19495a9068f.webp",
+"c": "img/f/30d32cbe5faa783dc0cb.webp",
+"a": "img/f/20130b31ef9c61084867.webp"
+},
+"pc-bt": {
+"q": "img/f/230715ceb2f8576cf3fe.webp",
+"c": "img/f/b4e6e9a25fd056ae70fb.webp",
+"a": "img/f/bc64705ba168c05f739b.webp"
+},
+"pc-mv": {
+"q": "img/f/250d62a8ad364b149310.webp",
+"c": "img/f/2248bfab9a417de90449.webp",
+"a": "img/f/7aa2a16d92bc98567efe.webp"
+},
+"pc-tm": {
+"q": "img/f/a7253cd6868a47cde43e.webp",
+"c": "img/f/415567c200318bd9e586.webp",
+"a": "img/f/4808688f2d397c141446.webp"
+},
+"pc-kg": {
+"q": "img/f/a1c26d7ebc422aefa815.webp",
+"c": "img/f/6f2234afd7f088f59f16.webp",
+"a": "img/f/490b778f9fe10459e8cb.webp"
+},
+"pc-tj": {
+"q": "img/f/38d70adb1dfe039ff1a2.webp",
+"c": "img/f/175a442a6ba826d6db92.webp",
+"a": "img/f/5751ed78e5a7b0c6b96e.webp"
+},
+"pc-bj": {
+"q": "img/f/fd197190c6b3e597510d.webp",
+"c": "img/f/a77bb6982fcf6eb9f6f3.webp",
+"a": "img/f/610f192dbdfc2e590ed1.webp"
+},
+"pc-bw": {
+"q": "img/f/21c3023d80d894a2a332.webp",
+"c": "img/f/3b72f2df0986fb2be4ef.webp",
+"a": "img/f/c3e29a7455950c7ae232.webp"
+},
+"pc-bf": {
+"q": "img/f/b6f00dd5a5a30a98167c.webp",
+"c": "img/f/6d4b0537aa4a90b6551f.webp",
+"a": "img/f/12bfa9f5b67949c85937.webp"
+},
+"pc-bi": {
+"q": "img/f/fa2ce5b2d23fd9951a87.webp",
+"c": "img/f/14ab9286ee7db6355b1d.webp",
+"a": "img/f/ab8f3e7c5777bb2b7738.webp"
+},
+"pc-cv": {
+"q": "img/f/854588cc54c4fec55eba.webp",
+"c": "img/f/7ef58b4bec9ae86ec970.webp",
+"a": "img/f/02014290342eb9449e6e.webp"
+},
+"pc-cf": {
+"q": "img/f/354b0b8ac294b491e935.webp",
+"c": "img/f/5f37c4bdb7809b618d2c.webp",
+"a": "img/f/d5693e096b7dcddf2465.webp"
+},
+"pc-km": {
+"q": "img/f/5b6846bc55e678811bd2.webp",
+"c": "img/f/bc78fbabf2e77686d4ca.webp",
+"a": "img/f/48e139d8df33f3917fea.webp"
+},
+"pc-dj": {
+"q": "img/f/0ad89a1374fcc59331d1.webp",
+"c": "img/f/4cd92cebc0bc6abb7730.webp",
+"a": "img/f/eb31ca85ef34f7247a81.webp"
+},
+"pc-gq": {
+"q": "img/f/6748b6fdc6dff4a493c1.webp",
+"c": "img/f/93ff6915f333c1fc4e0c.webp",
+"a": "img/f/5052fa399e39146f6697.webp"
+},
+"pc-er": {
+"q": "img/f/6c8c9c64a761d3205521.webp",
+"c": "img/f/71b628b096cf97be688e.webp",
+"a": "img/f/47ece227aadae116c842.webp"
+},
+"pc-sz": {
+"q": "img/f/d145b9561e2c293a2e32.webp",
+"c": "img/f/4ecb499be6c30e384e1a.webp",
+"a": "img/f/cc31711d84cca257bb79.webp"
+},
+"pc-ga": {
+"q": "img/f/f11b96c35365f4aab87c.webp",
+"c": "img/f/5e5b4f7c857f201aa63c.webp",
+"a": "img/f/817b45f9ad9655459702.webp"
+},
+"pc-gm": {
+"q": "img/f/dcf8122772b9017b7d4f.webp",
+"c": "img/f/b5626471b45b0f131f8a.webp",
+"a": "img/f/42438a37a6416e7e106d.webp"
+},
+"pc-gn": {
+"q": "img/f/97992bfa7fa5f6734048.webp",
+"c": "img/f/ea2847164a2c3c687dc7.webp",
+"a": "img/f/dc7998c299898c0f4e7b.webp"
+},
+"pc-gw": {
+"q": "img/f/4c52354db1de192068ea.webp",
+"c": "img/f/41b244f50861551f492f.webp",
+"a": "img/f/adac5a402c8b3a589efc.webp"
+},
+"pc-ls": {
+"q": "img/f/4874eaa049aa88e5a85d.webp",
+"c": "img/f/6da1ab86e3c05f9d40fe.webp",
+"a": "img/f/7d1a21ca0ec218e9d39d.webp"
+},
+"pc-mw": {
+"q": "img/f/8d9732576c634371b128.webp",
+"c": "img/f/ba244990722bea7b93e7.webp",
+"a": "img/f/a2090fa526a3d61080d3.webp"
+},
+"pc-mr": {
+"q": "img/f/38b15eeb81913c7a4c06.webp",
+"c": "img/f/e343103e96b0558d2327.webp",
+"a": "img/f/0a95d3f2635a310216fb.webp"
+},
+"pc-mu": {
+"q": "img/f/d5207ec668b0c8243afa.webp",
+"c": "img/f/148edf51e36fa0f55b47.webp",
+"a": "img/f/62fec8664bcf37c207d4.webp"
+},
+"pc-mz": {
+"q": "img/f/56ca060b736bd3ff18a8.webp",
+"c": "img/f/c94b8517bad73a0820b9.webp",
+"a": "img/f/f5054ca3454f1ea3836e.webp"
+},
+"pc-rw": {
+"q": "img/f/ef7dfc6f756564d081de.webp",
+"c": "img/f/40ba9937d607220647cd.webp",
+"a": "img/f/01da003498641b450888.webp"
+},
+"pc-st": {
+"q": "img/f/41ad6fcbeb27abff4d4a.webp",
+"c": "img/f/4e84c993a2ea8bb7af25.webp",
+"a": "img/f/8cb096262c32babde26b.webp"
+},
+"pc-sc": {
+"q": "img/f/e002c2f764bfe52b2540.webp",
+"c": "img/f/a6c9ace5060483f4b7cd.webp",
+"a": "img/f/c100930eeee62c3db154.webp"
+},
+"pc-sl": {
+"q": "img/f/630988af02c33b1f23a5.webp",
+"c": "img/f/49c3473aacc87a5117d8.webp",
+"a": "img/f/75c88843605c8f058059.webp"
+},
+"pc-ss": {
+"q": "img/f/5e6b0a5cf686de06ec3b.webp",
+"c": "img/f/ada637fca31e6fc1900d.webp",
+"a": "img/f/2ced44254d2b2249dc2c.webp"
+},
+"pc-tg": {
+"q": "img/f/3de4f577788423bf4aef.webp",
+"c": "img/f/7fb628bc6b7d1e8e7e28.webp",
+"a": "img/f/7c7301614a75f06e796d.webp"
+},
+"pc-zm": {
+"q": "img/f/c9230032854b5440af39.webp",
+"c": "img/f/8975e27834b8b5518a5f.webp",
+"a": "img/f/b2044305a3c94be560f7.webp"
+},
+"pc-ag": {
+"q": "img/f/67f84fc6004297ed4660.webp",
+"c": "img/f/1e941b2bd030dea53304.webp",
+"a": "img/f/b89af43aaa88492aa6f2.webp"
+},
+"pc-bb": {
+"q": "img/f/80a48b523644ab6bdfbd.webp",
+"c": "img/f/78b060c562b28f7d4d5c.webp",
+"a": "img/f/def1221a931b24b86030.webp"
+},
+"pc-bz": {
+"q": "img/f/3a27ccdcabec06d2f1f6.webp",
+"c": "img/f/14b7fe713173b30f291c.webp",
+"a": "img/f/85f4656e0398bb74f3c8.webp"
+},
+"pc-dm": {
+"q": "img/f/7c6e9387db252e967548.webp",
+"c": "img/f/6d5ac7adb7015108ec03.webp",
+"a": "img/f/f13183416d1308b6c6ba.webp"
+},
+"pc-gd": {
+"q": "img/f/693e8cb55b879bc3de98.webp",
+"c": "img/f/3c2a10633c298a42ceeb.webp",
+"a": "img/f/318ba790d3712d1daa02.webp"
+},
+"pc-kn": {
+"q": "img/f/9bf91d59d650da8c7228.webp",
+"c": "img/f/ccfecc2b19adad62910f.webp",
+"a": "img/f/3a63b140a1cb75eff30d.webp"
+},
+"pc-lc": {
+"q": "img/f/8574332d66045724e84b.webp",
+"c": "img/f/81d3574644f89725bbe3.webp",
+"a": "img/f/b34b86b7f7fdc2116533.webp"
+},
+"pc-vc": {
+"q": "img/f/eb040a9a409caf926942.webp",
+"c": "img/f/c94ce1883ebdf47a5d58.webp",
+"a": "img/f/d036ea30851fa30a5a77.webp"
+},
+"pc-ki": {
+"q": "img/f/81f730d6d7d46dbdca3d.webp",
+"c": "img/f/2e022885579d4a1398d4.webp",
+"a": "img/f/6e4315eade22ace4f49c.webp"
+},
+"pc-mh": {
+"q": "img/f/564dc0b52e463083994c.webp",
+"c": "img/f/8ec39db44872c26b7b19.webp",
+"a": "img/f/7634190de9a17e889183.webp"
+},
+"pc-fm": {
+"q": "img/f/f1766261a7d3e48cb7c2.webp",
+"c": "img/f/50373db8e483b5d96c6e.webp",
+"a": "img/f/340e734a9eda6de5c6de.webp"
+},
+"pc-nr": {
+"q": "img/f/01e1464e2dafa48cc22f.webp",
+"c": "img/f/95fa52edd6da6f98dfd5.webp",
+"a": "img/f/86cf1aa217812be6523b.webp"
+},
+"pc-pw": {
+"q": "img/f/005de75acea83c8cb632.webp",
+"c": "img/f/47aedc81174c12e2502b.webp",
+"a": "img/f/cf5e51bd47c58fd34b3a.webp"
+},
+"pc-sb": {
+"q": "img/f/cd67327729c1286b1355.webp",
+"c": "img/f/f2565484c209d87d6bcc.webp",
+"a": "img/f/bdd543e3ffeaacef3897.webp"
+},
+"pc-tv": {
+"q": "img/f/00067f6a46d8d25e3a82.webp",
+"c": "img/f/ab2e09c2f93e37969f0e.webp",
+"a": "img/f/42a86e3378cd98a5c05c.webp"
+},
+"pc-vu": {
+"q": "img/f/ff58fdd1b7f700209d60.webp",
+"c": "img/f/26a54fc796a2315b9d75.webp",
+"a": "img/f/84439aa6fd760f5c4558.webp"
+},
+"pc-tw": {
+"q": "img/f/7394ea66fbcf5fd70429.webp",
+"c": "img/f/3fd966128b3fc2cea9b9.webp",
+"a": "img/f/388ca22da6e052001bc7.webp"
+},
+"pc-xk": {
+"q": "img/f/20e8803949a1d17c403d.webp",
+"c": "img/f/2f049a98b312994a5591.webp",
+"a": "img/f/630249cc3c3f1969a71e.webp"
+}
+}
+}
