@@ -4,15 +4,17 @@ import { MEDALLAS, CATEGORIAS, NIVELES, NOMBRE_NIVEL, EXPLICA_NIVEL, porId } fro
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const METAL = {
   bronce: ["#ffd9b8", "#c77d42", "#7a4520", "#5c3214"], plata: ["#ffffff", "#c9d0d6", "#7f8a94", "#5b646c"],
-  oro: ["#fff6c2", "#f5c630", "#b8860b", "#7d5a00"], nada: ["#eceeed", "#c8ccca", "#9aa09c", "#7d827f"],
+  oro: ["#fff6c2", "#f5c630", "#b8860b", "#7d5a00"], cristal: ["#ffffff", "#d9f3ff", "#7cc4e4", "#3f8fb3"], nada: ["#eceeed", "#c8ccca", "#9aa09c", "#7d827f"],
 };
 const CINTA = { curiosas: ["#db2777", "#fde047"], eeuu: ["#1e3a8a", "#ef4444"], racha: ["#e4572e", "#f3a712"], mundo: ["#1d4ed8", "#60a5fa"], banderas: ["#b91c1c", "#fbbf24"], fisica: ["#0e7490", "#5eead4"], espana: ["#b91c1c", "#facc15"], hitos: ["#6d28d9", "#c4b5fd"] };
 let uid = 0;
 const fechaBonita = (iso) => new Date(iso + "T12:00:00Z").toLocaleDateString("es-ES", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" });
 
+const unica = (m) => m.tipo === "racha" || m.tipo === "evento";
 export function medallaSVG(m, nivel, tam = 84) {
-  const k = ++uid, [c1, c2, c3, c4] = METAL[nivel ?? "nada"], [r1, r2] = CINTA[m.cat] ?? CINTA.hitos, off = !nivel;
-  const estrellas = nivel ? NIVELES.indexOf(nivel) + 1 : 0;
+  const mat = nivel && unica(m) ? "cristal" : nivel;
+  const k = ++uid, [c1, c2, c3, c4] = METAL[mat ?? "nada"], [r1, r2] = CINTA[m.cat] ?? CINTA.hitos, off = !nivel;
+  const estrellas = nivel && !unica(m) ? NIVELES.indexOf(nivel) + 1 : 0;
   return `<svg class="medalla ${off ? "off" : ""}" width="${tam}" height="${tam * 1.2}" viewBox="0 0 100 120" role="img" aria-label="${esc(m.nombre)}${nivel ? " · " + NOMBRE_NIVEL[nivel] : " · bloqueada"}">
     <defs><radialGradient id="g${k}" cx="38%" cy="32%" r="75%"><stop offset="0" stop-color="${c1}"/><stop offset=".45" stop-color="${c2}"/><stop offset="1" stop-color="${c3}"/></radialGradient>
     <linearGradient id="b${k}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${c3}"/><stop offset="1" stop-color="${c4}"/></linearGradient></defs>
@@ -22,6 +24,7 @@ export function medallaSVG(m, nivel, tam = 84) {
     <circle cx="50" cy="76" r="34" fill="url(#g${k})"/>
     <circle cx="50" cy="76" r="27" fill="none" stroke="${c3}" stroke-opacity=".55" stroke-width="1.5" stroke-dasharray="2 3"/>
     <ellipse cx="38" cy="60" rx="14" ry="7" fill="#fff" opacity="${off ? 0.15 : 0.35}" transform="rotate(-30 38 60)"/>
+    ${mat === "cristal" ? `<path d="M50 42 L58 56 L50 52 L42 56 Z M22 76 L30 70 L30 82 Z M78 76 L70 70 L70 82 Z" fill="#fff" opacity=".55"/><text x="80" y="50" font-size="10" fill="#fff">✦</text><text x="18" y="100" font-size="8" fill="#fff">✦</text>` : ""}
     <text x="50" y="87" text-anchor="middle" font-size="30" class="emo">${m.emoji}</text>
     ${off ? `<circle cx="78" cy="104" r="11" fill="#7d827f"/><text x="78" y="109" text-anchor="middle" font-size="12">🔒</text>` : ""}
     ${estrellas > 1 ? `<text x="50" y="118" text-anchor="middle" font-size="11" fill="${c3}">${"★".repeat(estrellas)}</text>` : ""}
@@ -61,15 +64,11 @@ export function pantallaMedallas(app, vista) {
   const dlg = vista.querySelector("#detalle");
   vista.querySelectorAll("[data-med]").forEach((b) => (b.onclick = () => {
     const m = porId[b.dataset.med], e = medallas[m.id], g = ganadas[m.id], niv = nivelDe(m);
-    const escalera = m.tipo === "racha" ? MEDALLAS.filter((x) => x.tipo === "racha").map((x) => {
-      const hecha = !!(ganadas[x.id] || medallas[x.id].nivel), actual = x.id === m.id;
-      return `<li class="${actual ? "actual" : ""}">${hecha ? "✅" : "▫️"} ${x.emoji} <b>${x.n} días</b> · ${esc(x.nombre)}${!hecha ? ` <span class="suave">(${medallas[x.id].progreso}/${x.n})</span>` : ""}</li>`;
-    }).join("") : "";
-    const filas = escalera ? escalera : m.grupo ? NIVELES.map((n) => `<li>${niv && NIVELES.indexOf(niv) >= NIVELES.indexOf(n) ? "✅" : "▫️"} <b>${NOMBRE_NIVEL[n]}</b>: ${EXPLICA_NIVEL[n]} <span class="suave">(${e.cuenta[n]}/${e.total})</span></li>`).join("")
+    const filas = m.grupo ? NIVELES.map((n) => `<li>${niv && NIVELES.indexOf(niv) >= NIVELES.indexOf(n) ? "✅" : "▫️"} <b>${NOMBRE_NIVEL[n]}</b>: ${EXPLICA_NIVEL[n]} <span class="suave">(${e.cuenta[n]}/${e.total})</span></li>`).join("")
       : m.tipo === "contador" ? NIVELES.map((n) => `<li>${niv && NIVELES.indexOf(niv) >= NIVELES.indexOf(n) ? "✅" : "▫️"} <b>${NOMBRE_NIVEL[n]}</b>: ${m.pct ? Math.round(m.umbrales[n] * 100) + " %" : m.umbrales[n]}</li>`).join("") : "";
     dlg.innerHTML = `<div class="centro">${medallaSVG(m, niv, 150)}<h2>${esc(m.nombre)}</h2><p>${esc(m.desc)}</p>
-      ${m.tipo === "racha" ? `<p class="suave">Cada racha es una medalla distinta: no tienen plata ni oro, se van sumando escalones.</p>` : m.tipo === "evento" ? `<p class="suave">Medalla única: se consigue una vez.</p>` : ""}
-      ${filas ? `<ul class="partes izq ${escalera ? "escalera" : ""}">${filas}</ul>` : ""}
+      ${unica(m) ? `<p class="suave">💎 Medalla única, de cristal.</p>` : ""}
+      ${filas ? `<ul class="partes izq">${filas}</ul>` : ""}
       <p class="suave">${g ? `Conseguida el ${esc(fechaBonita(g.fecha))}${(m.grupo || m.tipo === "contador") && g.nivel ? " · " + NOMBRE_NIVEL[g.nivel] : ""}` : esc(textoProgreso(m, e))}</p>
       <button class="btn prim" id="cerrar">Cerrar</button></div>`;
     dlg.showModal(); dlg.querySelector("#cerrar").onclick = () => dlg.close();
