@@ -8,6 +8,7 @@ const METAL = {
 };
 const CINTA = { curiosas: ["#db2777", "#fde047"], eeuu: ["#1e3a8a", "#ef4444"], racha: ["#e4572e", "#f3a712"], mundo: ["#1d4ed8", "#60a5fa"], banderas: ["#b91c1c", "#fbbf24"], fisica: ["#0e7490", "#5eead4"], espana: ["#b91c1c", "#facc15"], hitos: ["#6d28d9", "#c4b5fd"] };
 let uid = 0;
+const fechaBonita = (iso) => new Date(iso + "T12:00:00Z").toLocaleDateString("es-ES", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" });
 
 export function medallaSVG(m, nivel, tam = 84) {
   const k = ++uid, [c1, c2, c3, c4] = METAL[nivel ?? "nada"], [r1, r2] = CINTA[m.cat] ?? CINTA.hitos, off = !nivel;
@@ -60,11 +61,16 @@ export function pantallaMedallas(app, vista) {
   const dlg = vista.querySelector("#detalle");
   vista.querySelectorAll("[data-med]").forEach((b) => (b.onclick = () => {
     const m = porId[b.dataset.med], e = medallas[m.id], g = ganadas[m.id], niv = nivelDe(m);
-    const filas = m.grupo ? NIVELES.map((n) => `<li>${niv && NIVELES.indexOf(niv) >= NIVELES.indexOf(n) ? "✅" : "▫️"} <b>${NOMBRE_NIVEL[n]}</b>: ${EXPLICA_NIVEL[n]} <span class="suave">(${e.cuenta[n]}/${e.total})</span></li>`).join("")
+    const escalera = m.tipo === "racha" ? MEDALLAS.filter((x) => x.tipo === "racha").map((x) => {
+      const hecha = !!(ganadas[x.id] || medallas[x.id].nivel), actual = x.id === m.id;
+      return `<li class="${actual ? "actual" : ""}">${hecha ? "✅" : "▫️"} ${x.emoji} <b>${x.n} días</b> · ${esc(x.nombre)}${!hecha ? ` <span class="suave">(${medallas[x.id].progreso}/${x.n})</span>` : ""}</li>`;
+    }).join("") : "";
+    const filas = escalera ? escalera : m.grupo ? NIVELES.map((n) => `<li>${niv && NIVELES.indexOf(niv) >= NIVELES.indexOf(n) ? "✅" : "▫️"} <b>${NOMBRE_NIVEL[n]}</b>: ${EXPLICA_NIVEL[n]} <span class="suave">(${e.cuenta[n]}/${e.total})</span></li>`).join("")
       : m.tipo === "contador" ? NIVELES.map((n) => `<li>${niv && NIVELES.indexOf(niv) >= NIVELES.indexOf(n) ? "✅" : "▫️"} <b>${NOMBRE_NIVEL[n]}</b>: ${m.pct ? Math.round(m.umbrales[n] * 100) + " %" : m.umbrales[n]}</li>`).join("") : "";
     dlg.innerHTML = `<div class="centro">${medallaSVG(m, niv, 150)}<h2>${esc(m.nombre)}</h2><p>${esc(m.desc)}</p>
-      ${filas ? `<ul class="partes izq">${filas}</ul>` : ""}
-      <p class="suave">${g ? `Conseguida el ${esc(g.fecha)}${g.nivel ? " · " + NOMBRE_NIVEL[g.nivel] : ""}` : esc(textoProgreso(m, e))}</p>
+      ${m.tipo === "racha" ? `<p class="suave">Cada racha es una medalla distinta: no tienen plata ni oro, se van sumando escalones.</p>` : m.tipo === "evento" ? `<p class="suave">Medalla única: se consigue una vez.</p>` : ""}
+      ${filas ? `<ul class="partes izq ${escalera ? "escalera" : ""}">${filas}</ul>` : ""}
+      <p class="suave">${g ? `Conseguida el ${esc(fechaBonita(g.fecha))}${(m.grupo || m.tipo === "contador") && g.nivel ? " · " + NOMBRE_NIVEL[g.nivel] : ""}` : esc(textoProgreso(m, e))}</p>
       <button class="btn prim" id="cerrar">Cerrar</button></div>`;
     dlg.showModal(); dlg.querySelector("#cerrar").onclick = () => dlg.close();
   }));
