@@ -184,7 +184,7 @@ function bloqueCorreccion(n) {
       <p class="suave">Tu respuesta: «${esc(q.respuesta)}»</p>
     </div>
     <div class="dato">💡 ${esc(it.dato)}</div>
-    ${!ok ? imgsHTML(it, true) : ""}
+    ${imgsHTML(it, true)}
     <p class="suave">Próximo repaso: ${esc(fechaLarga(q.proxima_revision))} (${r.dias === 1 ? "mañana" : `en ${r.dias} días`}).</p>
     ${!ok ? `<details><summary>El dictado se equivocó / quiero reevaluar</summary>
       <form class="respuesta reeval" data-n="${n}"><input type="text" autocomplete="off" autocorrect="off" spellcheck="false" placeholder="Lo que querías decir"><button class="btn" type="submit">Reevaluar</button></form>
