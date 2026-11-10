@@ -2,7 +2,7 @@
 import { crearApp, APP_VERSION } from "./logica.js";
 import { abrirIndexedDB } from "./almacen.js";
 import { NOMBRE_TIPO, C } from "./srs.js";
-import { horaMadrid, difDias } from "./util.js";
+import { horaMadrid, difDias, sumarDias } from "./util.js";
 import { pantallaMedallas, celebrar } from "./medallas_ui.js";
 import { MEDALLAS } from "./logros.js";
 
@@ -75,9 +75,21 @@ function bienvenida() {
 function inicio() {
   const e = app.estadisticas(), hoy = app.hoy(), ses = app.sesion(), pend = app.preguntaPendiente();
   const hechaHoy = ses && !pend && ses.fecha === hoy;
+  // Plan del día: repasos que vencen hoy (tipos activos) y sesiones aproximadas para hacerlos
+  const ex = app.excluidos(), man = sumarDias(hoy, 1);
+  let debidos = 0, manana = 0;
+  for (const [id, r] of Object.entries(app.estado()?.items ?? {})) {
+    if (!app.P.has(id) || ex.has(id)) continue;
+    if ((r.vence ?? "9999") <= hoy) debidos++; else if (r.vence === man) manana++;
+  }
+  let sesNec = 0; for (let d = debidos, N = C.SESION_N; d > 0; sesNec++) d -= d <= 3 * N ? Math.ceil(0.6 * N) : N - 1;
+  const hechasHoy = (app.datos.logros?.sesiones ?? []).filter((x) => x.fecha === hoy).length;
+  const plan = `<p class="plan">${hechasHoy ? `<span>Hoy llevas <b>${hechasHoy}</b> sesi${hechasHoy === 1 ? "ón" : "ones"}</span>` : ""}${debidos
+      ? `<span>Te ${debidos === 1 ? "toca <b>1 repaso</b>" : `tocan <b>${debidos} repasos</b>`} · ${sesNec === 1 ? "1 sesión" : `unas ${sesNec} sesiones`}</span>`
+      : `<span>✅ Repasos de hoy al día${hechasHoy ? "" : ""}</span>`}<span class="suave">Mañana: ${manana}</span></p>`;
   let estadoDia;
   if (pend) estadoDia = `<p>Tienes la sesión <b>${esc(ses.sesion)}</b> a medias: vas por la <b>${pend.n}/${ses.preguntas.length}</b>.</p><button class="btn prim" id="empezar">Continuar sesión</button>`;
-  else if (hechaHoy) estadoDia = `<p>✅ Sesión de hoy hecha. ¿Te apetece otra?</p><button class="btn" id="empezar">Otra sesión de 10</button>`;
+  else if (hechaHoy) estadoDia = `<p>${debidos ? "Aún te quedan repasos de hoy." : "Has hecho los repasos de hoy. Otra sesión te trae países nuevos y práctica."}</p><button class="btn ${debidos ? "prim" : ""}" id="empezar">Otra sesión de ${C.SESION_N}</button>`;
   else if (horaMadrid() >= 7) estadoDia = `<p>Tu sesión de hoy está lista: ${C.SESION_N} preguntas${e.repasos_pendientes_hoy ? `, con repasos pendientes primero` : ""}.</p><button class="btn prim" id="empezar">Empezar sesión</button>`;
   else estadoDia = `<p>La sesión de hoy estará lista a las 07:00. Si quieres, puedes empezarla ya.</p><button class="btn prim" id="empezar">Empezar ahora</button>`;
   const ult = app.datos.meta?.ultima_exportacion, diasSinCopia = ult ? difDias(hoy, ult.slice(0, 10)) : null;
@@ -97,7 +109,7 @@ function inicio() {
   vista.innerHTML = `
     <h1>${esc(fechaLarga(hoy).replace(/^./, (c) => c.toUpperCase()))}</h1>
     ${beta}${avisoCopia}${avisoPersist}${sinImg}
-    <div class="tarjeta">${estadoDia}</div>
+    <div class="tarjeta">${plan}${estadoDia}</div>
     ${bloqueRacha}
     <div class="cifras">
       <div class="cifra"><b>${e.repasos_pendientes_hoy}</b><span>repasos hoy</span></div>
