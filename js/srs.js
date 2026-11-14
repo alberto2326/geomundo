@@ -4,10 +4,10 @@ import { respuestaTexto, capitalesTexto } from "./comparar.js";
 
 export const C = {
   SESION_N: 10, MEZCLA: { pais: 4, bandera: 2, fisico: 3, espana: 1 }, INTERVALO_MAX: 120, APRENDIDA_DIAS: 21, CONSOLIDADA_REPS: 2,
-  UMBRAL_NIVEL: 0.7, TOPE_UMBRAL: { pais: 24, bandera: null, fisico: 30, espana: 40 }, POOL_MAX: { pais: 40, bandera: 25, fisico: 45, espana: 25 },
-  RELLENO_PREF: ["fisico", "pais", "espana", "bandera"], TIPOS: ["pais", "bandera", "fisico", "espana"],
+  UMBRAL_NIVEL: 0.7, TOPE_UMBRAL: { pais: 24, bandera: null, fisico: 30, espana: 40, estado: null, ciudad: null }, POOL_MAX: { pais: 40, bandera: 25, fisico: 45, espana: 25, estado: 20, ciudad: 15 },
+  RELLENO_PREF: ["fisico", "pais", "espana", "bandera", "estado", "ciudad"], TIPOS: ["pais", "bandera", "fisico", "espana", "estado", "ciudad"],
 };
-export const NOMBRE_TIPO = { pais: "País y capital", bandera: "Bandera", fisico: "Geografía física", espana: "España" };
+export const NOMBRE_TIPO = { pais: "País y capital", bandera: "Bandera", fisico: "Geografía física", espana: "España", estado: "Estado de EE. UU.", ciudad: "Ciudad del mundo" };
 
 export const estadoNuevo = () => ({ version: 1, creado: null, items: {}, dias_activos: [] });
 
@@ -179,7 +179,7 @@ export function crearSRS(items, motor) {
     const resultado = { ok: "correcta", casi: "casi", parcial: "parcial", vacia: "vacia" }[r] ?? "incorrecta";
     const reevaluada = !!q.corregida;
     Object.assign(q, { corregida: true, antes, respuesta: resp, resultado, proxima_revision: rec.vence });
-    if (it.tipo === "pais") q.partes = info.partes;
+    if (it.capitales) q.partes = info.partes;
     if (!st.creado) st.creado = fecha;
     if (!st.dias_activos.includes(fecha)) { st.dias_activos.push(fecha); st.dias_activos.sort(); }
     const evento = { sesion: ses.sesion, n, id: q.id, modo: q.modo, respuesta: resp, resultado, partes: q.partes ?? null, fecha, reevaluada };
@@ -190,12 +190,12 @@ export function crearSRS(items, motor) {
 
   function retroalimentacion(it, q, info, fecha) {
     const lineas = [];
-    if (it.tipo === "pais") {
-      const p = info.partes || {}, caps = capitalesTexto(it);
-      if (p.pais === "ok") lineas.push(`País ✅ (${it.nombre})`);
-      else if (p.pais == null) lineas.push(`País ❌ (no lo dijiste; era ${it.nombre})`);
-      else if (p.pais === "casi") lineas.push(`País 🟡 («${info.tu_pais}» es ambiguo; era ${it.nombre})`);
-      else lineas.push(`País ❌ (${info.interpretada_pais ? "dijiste " + info.interpretada_pais : "dijiste «" + (info.tu_pais ?? "") + "»"}; era ${it.nombre})`);
+    if (it.capitales) {
+      const p = info.partes || {}, caps = capitalesTexto(it), E = it.tipo === "estado" ? "Estado" : "País";
+      if (p.pais === "ok") lineas.push(`${E} ✅ (${it.nombre})`);
+      else if (p.pais == null) lineas.push(`${E} ❌ (no lo dijiste; era ${it.nombre})`);
+      else if (p.pais === "casi") lineas.push(`${E} 🟡 («${info.tu_pais}» es ambiguo; era ${it.nombre})`);
+      else lineas.push(`${E} ❌ (${info.interpretada_pais ? "dijiste " + info.interpretada_pais : "dijiste «" + (info.tu_pais ?? "") + "»"}; era ${it.nombre})`);
       if (p.capital === "ok") lineas.push(`Capital ✅ (${caps})`);
       else if (p.capital == null) lineas.push(`Capital ❌ (no la dijiste; era ${caps})`);
       else if (p.capital === "casi") lineas.push(`Capital 🟡 (muy parecido pero no seguro; era ${caps})`);
@@ -203,7 +203,7 @@ export function crearSRS(items, motor) {
     }
     return {
       resultado: q.resultado, correcta: respuestaTexto(it), dato: it.dato, lineas,
-      interpretada: it.tipo !== "pais" && q.resultado !== "correcta" ? info.interpretada_nombre ?? null : null,
+      interpretada: !it.capitales && q.resultado !== "correcta" ? info.interpretada_nombre ?? null : null,
       nota: info.nota ?? null, proxima: q.proxima_revision, dias: Math.max(0, difDias(q.proxima_revision, fecha)),
     };
   }

@@ -4,7 +4,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import { crearMotor } from "../js/comparar.js";
-import { crearSRS, sm2, estadoNuevo } from "../js/srs.js";
+import { crearSRS, sm2, estadoNuevo, C } from "../js/srs.js";
 import { crearApp, VERSION_FORMATO } from "../js/logica.js";
 import { almacenMemoria } from "../js/almacen.js";
 
@@ -16,11 +16,31 @@ const semilla = STATE ? fs.readFileSync(STATE, "utf8") : null;
 const conSemilla = { skip: !semilla && "sin GEOMUNDO_STATE" };
 const reloj = (iso) => () => new Date(iso);
 
-test("§9.2 catálogo: 1332 ids únicos, 195/200/566/371", () => {
+test("§9.2 catálogo: 1422 ids únicos, 195/200/566/371 + 50 estados + 40 ciudades", () => {
   const ids = new Set(catalogo.items.map((i) => i.id));
-  assert.equal(ids.size, 1332);
+  assert.equal(ids.size, 1422);
   const n = (t) => catalogo.items.filter((i) => i.tipo === t).length;
-  assert.deepEqual([n("pais"), n("bandera"), n("fisico"), n("espana")], [195, 200, 566, 371]);
+  assert.deepEqual([n("pais"), n("bandera"), n("fisico"), n("espana"), n("estado"), n("ciudad")], [195, 200, 566, 371, 50, 40]);
+});
+
+test("dictado: estados, ciudades y capitales que chocan", () => {
+  const c = (id, r) => motor.comparar(motor.porId.get(id), r)[0];
+  assert.equal(c("us-tx", "Texas, Austin"), "ok");
+  assert.equal(c("us-tx", "Texas"), "parcial");
+  assert.equal(c("us-tx", "Texas, Houston"), "parcial");
+  assert.equal(c("us-mn", "Minnesota, Saint Paul"), "ok");
+  assert.equal(c("us-ny", "Nueva York, Albany"), "ok");
+  assert.equal(c("us-ga", "Georgia, Atlanta"), "ok");
+  assert.equal(c("us-wa", "Washington, Olympia"), "ok");
+  assert.equal(c("pc-bo", "Bolivia, La Paz"), "ok");
+  assert.equal(c("pc-gq", "Guinea Ecuatorial, Malabo"), "ok");
+  assert.equal(c("pc-gq", "Guinea Ecuatorial, Ciudad de la Paz"), "ok");
+  assert.equal(c("pc-gq", "Guinea Ecuatorial, Oyala"), "ok");
+  const ciu = (n) => catalogo.items.find((i) => i.tipo === "ciudad" && i.nombre.startsWith(n)).id;
+  assert.equal(c(ciu("Bombay"), "Mumbai"), "ok");
+  assert.equal(c(ciu("Bombay"), "Calcuta"), "mal");
+  assert.equal(c(ciu("Ciudad Ho Chi Minh"), "Saigón"), "ok");
+  assert.equal(c(ciu("Hamburgo"), "Hamburgo"), "ok");
 });
 
 test("§9.4 dictado", () => {
@@ -189,21 +209,23 @@ test("escritura atómica: si falla a mitad, no cambia nada", async () => {
   assert.deepEqual(await alm.leer(), antes);
 });
 
-test("beta: solo países y capitales (10 por sesión) y estadísticas solo de países", conSemilla, async () => {
+test("config: mezcla de seis tipos, todas con imagen; el progreso se conserva", conSemilla, async () => {
   const config = JSON.parse(fs.readFileSync(new URL("../data/config.json", import.meta.url), "utf8"));
   const indice = JSON.parse(fs.readFileSync(new URL("../img/indice.json", import.meta.url), "utf8")).items;
   const app = await crearApp({ catalogo, almacen: almacenMemoria(), cuarentena, imagenes: indice, config, ahora: reloj("2026-11-08T07:00:00Z") });
   const a = await app.analizarImportacion(semilla); await app.aplicarImportacion(a.datos);
   const e = app.estadisticas();
-  assert.equal(e.total, 195); assert.equal(e.vistos, 40); assert.equal(e.por_tipo.pais.acierto, 83);
-  assert.deepEqual(Object.keys(e.por_tipo), ["pais"]);
+  assert.equal(e.total, 1422); assert.equal(e.vistos, 107);
   for (let k = 0; k < 5; k++) {
     const { sesion } = await app.sesionActual();
     assert.equal(sesion.preguntas.length, 10);
-    for (const q of sesion.preguntas) { assert.equal(q.tipo, "pais"); assert.ok(indice[q.id]?.q && indice[q.id]?.c); }
+    const n = (t) => sesion.preguntas.filter((q) => q.tipo === t).length;
+    assert.deepEqual(C.TIPOS.map(n), C.TIPOS.map((t) => config.mezcla[t]));
+    for (let j = 0; j + 1 < 10; j++) assert.notEqual(sesion.preguntas[j].tipo, sesion.preguntas[j + 1].tipo);
+    for (const q of sesion.preguntas) assert.ok(indice[q.id]?.q);
     for (const q of sesion.preguntas) await app.responder(q.n, "no sé");
   }
   assert.ok(Object.keys(app.estado().items).some((i) => i.startsWith("fi-"))); // el progreso de lo demás se conserva
   const m = app.medallas().medallas;
-  assert.ok(m["fi-mar"].oculta && m["es-todo"].oculta && !m["pc-europa"].oculta && !m["cu-sovietico"].oculta);
+  assert.ok(!m["fi-mar"].oculta && !m["es-todo"].oculta && !m["us-union"].oculta && !m["ci-todas"].oculta);
 });

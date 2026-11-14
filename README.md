@@ -28,14 +28,11 @@ Una pregunta por pantalla: escribes la respuesta (o la dictas con el micrófono 
 - **Riesgo de pérdida**: borrar los datos del navegador, la navegación privada o cambiar de móvil borran el progreso local. Por eso la app avisa si llevas 7 días sin descargar una copia. Instalada en la pantalla de inicio, pide almacenamiento persistente.
 - **Varios dispositivos**: no se sincronizan. Descarga la copia en uno y cárgala en el otro.
 
-## Beta actual: solo países y capitales
-`data/config.json` limita las sesiones a 10 preguntas de país + capital (`"tipos": ["pais"]`). Las estadísticas y las medallas muestran solo lo activo. El progreso de los demás tipos se conserva. Para volver a la mezcla completa, borra `tipos` y `mezcla` de ese fichero (o el fichero entero).
-
-Las imágenes de la beta (195 países × pregunta, contexto y solución) se importaron con:
-```
-python3 -I tools/importar_beta.py datos.json CARPETA_IMG
-```
-Este script comprueba el SHA-256 de cada imagen y la convierte a WebP sin pérdida (89 MB → 36 MB).
+## Contenido (versión 2.0)
+1422 preguntas: 195 países + capital, 200 banderas, 566 de geografía física, 371 de España, 50 estados de EE. UU. + capital y 40 grandes ciudades del mundo.
+- `data/config.json` decide qué tipos salen y la mezcla de cada sesión de 10. Ahora mismo: 3 de país, 2 de bandera, 2 de física, 1 de España, 1 de estado y 1 de ciudad.
+- `tools/construir_catalogo_paquetes.py CARPETA` reconstruye el catálogo a partir de los paquetes `datos*.json`.
+- `tools/importar_paquetes.py CARPETA` comprueba el SHA-256 de cada imagen y las copia con nombres opacos a `img/f/`.
 
 ## Imágenes
 `img/indice.json` dice qué imagen corresponde a cada pregunta: `q` es la de la pregunta, `c` la de contexto y `a` la solución. Los nombres de los ficheros son hashes, para que no delaten la respuesta. Para añadir las imágenes:

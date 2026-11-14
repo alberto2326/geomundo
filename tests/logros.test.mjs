@@ -54,16 +54,18 @@ test("terminar una sesión da el primer sello; 10/10 da «Pleno»; se exporta e 
   assert.deepEqual(b.ganadas(), app.ganadas());
 });
 
-test("medallas curiosas: Homo sovieticus tiene 15 países; las de EE. UU. siguen ocultas sin estados", () => {
+test("medallas: Homo sovieticus 15; Unión 25, Confederación 11, Ruta 66 50; Cosmopolita 40; ninguna vacía", () => {
   const e = evaluar({ items, estado: { items: {}, dias_activos: [] }, hoy: "2026-11-07" });
   assert.equal(e.medallas["cu-sovietico"].total, 15);
-  assert.equal(e.medallas["cu-dobles"].total > 5, true);
-  for (const id of ["us-union", "us-confederacion", "us-todos"]) assert.ok(e.medallas[id].oculta, id);
-  for (const m of MEDALLAS) if (m.grupo && !m.id.startsWith("us-")) assert.ok(!e.medallas[m.id].oculta, m.id);
+  assert.equal(e.medallas["us-union"].total, 25);
+  assert.equal(e.medallas["us-confederacion"].total, 11);
+  assert.equal(e.medallas["us-todos"].total, 50);
+  assert.equal(e.medallas["ci-todas"].total, 40);
+  for (const m of MEDALLAS) if (m.grupo) assert.ok(!e.medallas[m.id].oculta, m.id);
 });
 
 test("estados de EE. UU.: Georgia el estado cuenta para la Confederación, Georgia el país no", () => {
-  const fake = [...items, { id: "us-ga", tipo: "estado", subtipo: "estado_capital", nombre: "Georgia", alias: [] }, { id: "us-oh", tipo: "estado", subtipo: "estado_capital", nombre: "Ohio", alias: [] }];
+  const fake = [...items.filter((i) => i.tipo !== "estado"), { id: "us-ga", tipo: "estado", subtipo: "estado_capital", nombre: "Georgia", alias: [] }, { id: "us-oh", tipo: "estado", subtipo: "estado_capital", nombre: "Ohio", alias: [] }];
   const e = evaluar({ items: fake, estado: { items: {}, dias_activos: [] }, hoy: "2026-11-07" });
   assert.equal(e.medallas["us-confederacion"].total, 1);
   assert.equal(e.medallas["us-union"].total, 1);

@@ -137,6 +137,11 @@ async function empezar() {
 }
 
 // ---------- pregunta ----------
+function textoCorto(it) {
+  if (it.tipo === "pais") return "¿Qué país está marcado en rojo y cuál es su capital?";
+  if (it.tipo === "estado") return "¿Qué estado de EE. UU. está marcado en rojo y cuál es su capital?";
+  return it.pregunta;
+}
 function imgsHTML(it, solucion = false) {
   const im = imagenes?.[it.id];
   if (solucion) return im?.a ? `<div class="imgs"><figure><img src="${esc(im.a)}" alt="Mapa con la respuesta" loading="lazy"><figcaption>Solución</figcaption></figure></div>` : "";
@@ -154,11 +159,11 @@ function pregunta() {
   vista.innerHTML = `
     <div class="cabeza"><span class="num">${q.n}/${tot}</span><span class="etiqueta">${esc(NOMBRE_TIPO[it.tipo])}${q.modo === "repaso" ? " · repaso" : ""}</span></div>
     ${puntos(ses, q.n)}
-    <p class="pregunta">${esc(it.tipo === "pais" ? "¿Qué país está marcado en rojo y cuál es su capital?" : it.pregunta)}</p>
+    <p class="pregunta">${esc(textoCorto(it))}</p>
     ${imgsHTML(it)}
     <form class="respuesta" id="f" autocomplete="off">
       <input id="r" type="text" enterkeyhint="send" autocomplete="off" autocorrect="off" autocapitalize="sentences" spellcheck="false"
-        placeholder="${it.tipo === "pais" ? "País y capital: «Kenia, Nairobi»" : "Tu respuesta"}" aria-label="Tu respuesta">
+        placeholder="${it.tipo === "pais" ? "País y capital: «Kenia, Nairobi»" : it.tipo === "estado" ? "Estado y capital: «Texas, Austin»" : "Tu respuesta"}" aria-label="Tu respuesta">
       <button class="btn prim" type="submit">${q.n < tot ? "Siguiente" : "Terminar y corregir"}</button>
     </form>
     <button class="btn" id="nose">No lo sé</button>
@@ -189,7 +194,7 @@ function bloqueCorreccion(n) {
     : q.resultado === "parcial" ? "A medias (cuenta como fallo)" : q.resultado === "casi" ? "Casi: concreta un poco más" : q.resultado === "vacia" ? "Sin respuesta" : "No era eso";
   return `<div class="resultado ${ok ? "ok" : medio ? "medio" : "mal"}">
       <h2>${ok ? "✅" : medio ? "🟠" : "❌"} ${esc(titulo)}</h2>
-      ${!ok ? `<p>Era <b>${esc(r.correcta)}</b>.</p>` : it.tipo === "pais" ? `<p><b>${esc(r.correcta)}</b></p>` : `<p><b>${esc(it.nombre)}</b></p>`}
+      ${!ok ? `<p>Era <b>${esc(r.correcta)}</b>.</p>` : it.capitales ? `<p><b>${esc(r.correcta)}</b></p>` : `<p><b>${esc(it.nombre)}</b></p>`}
       ${r.lineas.length ? `<ul class="partes">${r.lineas.map((l) => `<li>${esc(l)}</li>`).join("")}</ul>` : ""}
       ${r.interpretada ? `<p>Lo que dijiste es <b>${esc(r.interpretada)}</b>.</p>` : ""}
       ${q.resultado === "casi" && r.nota ? `<p class="suave">(${esc(r.nota)})</p>` : ""}
@@ -232,15 +237,15 @@ function hoja(irA = null) {
   const bor = { ...(ses.borradores ?? {}) };
   const ac = ses.preguntas.filter((q) => q.resultado === "correcta").length;
   const cabecera = pend.length
-    ? `<h1>${esc(ses.sesion)} · ${tot} preguntas</h1><p class="suave">Escribe la respuesta de cada pregunta y pulsa «Corregir» al final.${ses.preguntas.some((q) => app.P.get(q.id).tipo === "pais") ? " En país y capital, di las dos cosas." : ""}</p>`
+    ? `<h1>${esc(ses.sesion)} · ${tot} preguntas</h1><p class="suave">Escribe la respuesta de cada pregunta y pulsa «Corregir» al final.${ses.preguntas.some((q) => app.P.get(q.id).capitales) ? " En país (o estado) y capital, di las dos cosas." : ""}</p>`
     : `<h1>${ac}/${tot} aciertos</h1><p>Aquí tienes las ${tot} correcciones. <a href="#" data-ir="resumen">Ver resumen</a></p>`;
   vista.innerHTML = `${cabecera}
     ${ses.preguntas.map((q) => {
       const it = app.P.get(q.id);
       return `<section class="preg tarjeta" id="p${q.n}" data-n="${q.n}">
         <div class="cabeza"><span class="num">${q.n}/${tot}</span><span class="etiqueta">${esc(NOMBRE_TIPO[it.tipo])}${q.modo === "repaso" ? " · repaso" : ""}</span></div>
-        ${q.corregida ? "" : `<p class="pregunta corta">${esc(it.tipo === "pais" ? "¿Qué país está marcado y cuál es su capital?" : it.pregunta)}</p>${imgsHTML(it)}`}
-        ${q.corregida ? bloqueCorreccion(q.n) : `<input class="caja" id="r${q.n}" data-n="${q.n}" type="text" enterkeyhint="next" autocomplete="off" autocorrect="off" spellcheck="false" placeholder="${it.tipo === "pais" ? "País y capital" : "Tu respuesta"}" value="${esc(bor[q.n] ?? "")}">`}
+        ${q.corregida ? "" : `<p class="pregunta corta">${esc(textoCorto(it))}</p>${imgsHTML(it)}`}
+        ${q.corregida ? bloqueCorreccion(q.n) : `<input class="caja" id="r${q.n}" data-n="${q.n}" type="text" enterkeyhint="next" autocomplete="off" autocorrect="off" spellcheck="false" placeholder="${it.tipo === "pais" ? "País y capital" : it.tipo === "estado" ? "Estado y capital" : "Tu respuesta"}" value="${esc(bor[q.n] ?? "")}">`}
       </section>`;
     }).join("")}
     ${pend.length ? `<div class="espaciador"></div>
@@ -287,7 +292,7 @@ function resumen() {
     <p>${nuevos ? `${nuevos} pregunta${nuevos > 1 ? "s" : ""} nueva${nuevos > 1 ? "s" : ""}. ` : ""}${vuelven ? `${vuelven === 1 ? "La que fallaste vuelve" : `Las ${vuelven} que fallaste vuelven`} mañana.` : "¡Sin fallos!"}</p>
     <div class="tarjeta"><ul class="lista">${ses.preguntas.map((q) => {
       const it = app.P.get(q.id);
-      return `<li><span class="ic">${ic[q.resultado] ?? "·"}</span><span class="tx"><b>${q.n}.</b> ${esc(it.tipo === "pais" ? `${it.nombre} (${it.capitales.map((c) => c.nombre).join(" / ")})` : it.nombre)}<br>
+      return `<li><span class="ic">${ic[q.resultado] ?? "·"}</span><span class="tx"><b>${q.n}.</b> ${esc(it.capitales ? `${it.nombre} (${it.capitales.map((c) => c.nombre).join(" / ")})` : it.nombre)}<br>
         <span class="suave">${esc(MODO[q.modo])} · vuelve ${q.proxima_revision ? (difDias(q.proxima_revision, app.hoy()) <= 1 ? "" : "el ") + esc(fechaCorta(q.proxima_revision, app.hoy())) : "–"}</span></span>
         ${q.resultado !== "correcta" ? `<button class="btn" style="width:auto;margin:0;padding:6px 10px" data-re="${q.n}">Revisar</button>` : ""}</li>`;
     }).join("")}</ul></div>
@@ -338,6 +343,15 @@ async function progreso() {
     ${meta.copia_previa ? `<button class="btn" id="deshacer">↩️ Deshacer la última carga</button>` : ""}
     ${copias.length ? `<details class="tarjeta"><summary>Copias automáticas en este dispositivo (${copias.length})</summary><ul class="lista">${copias.map((c) =>
       `<li><span class="tx">${esc(c.creada.slice(0, 16).replace("T", " "))} <span class="suave">· ${esc(c.motivo)}</span></span><button class="btn" style="width:auto;margin:0;padding:6px 10px" data-copia="${c.id}">Descargar</button></li>`).join("")}</ul></details>` : ""}
+    <details class="tarjeta"><summary>Créditos y licencias</summary>
+      <p>• Mapas: <b>Natural Earth</b> (dominio público).</p>
+      <p>• Ríos San Lorenzo, Niemen y Ubangui: © colaboradores de <b>OpenStreetMap</b>, licencia ODbL 1.0.</p>
+      <p>• Siete cordilleras y mesetas: <b>GMBA Mountain Inventory v2</b> (CC BY 4.0). Snethlage, M.A. et al. (2022), «A hierarchical inventory of the world's mountains for global comparative mountain science», <i>Scientific Data</i> 9:149, doi:10.1038/s41597-022-01256-y; GMBA-EarthEnv, doi:10.48601/earthenv-t9k2-1407.</p>
+      <p>• Mar de Scotia y mar Cantábrico: <b>SeaVoX v19</b> (BODC/Marine Regions, CC BY 4.0, doi:10.14284/590); límite del Cantábrico según la división <b>ICES 8.c</b> (CC BY 4.0).</p>
+      <p>• Ciudades de España: coordenadas de OpenStreetMap/Wikidata.</p>
+      <p>• Banderas: imágenes de flagcdn/Flagpedia. ${esc(app.items.filter((i) => i.atribucion).map((i) => i.atribucion).join(" "))}</p>
+      <p>• Curiosidades: escritas a mano en el proyecto; las de las ciudades del mundo, contrastadas con Wikipedia.</p>
+    </details>
     <details class="tarjeta"><summary>Importante sobre tus datos</summary>
       <p>• Si borras los datos del navegador, usas navegación privada o cambias de móvil, el progreso de aquí se pierde. Descarga una copia a menudo.</p>
       <p>• Si usas la app en dos dispositivos, los cambios no se juntan solos: carga siempre la copia más reciente en el que vayas a usar.</p>

@@ -1,6 +1,6 @@
 {
- "modo": "beta",
- "nombre": "Beta · países y capitales",
- "tipos": ["pais"],
- "mezcla": {"pais": 10}
+ "modo": "completo",
+ "nombre": "Geografía del Mundo",
+ "tipos": ["pais", "bandera", "fisico", "espana", "estado", "ciudad"],
+ "mezcla": {"pais": 3, "bandera": 2, "fisico": 2, "espana": 1, "estado": 1, "ciudad": 1}
 }

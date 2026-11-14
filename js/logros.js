@@ -40,7 +40,7 @@ const ids = (...l) => { const x = new Set(l); return (it) => x.has(it.id); };
 const prov = (...l) => ids(...l.map((p) => "es-provincia-" + p));
 const nrm = (t) => String(t).toLowerCase().normalize("NFD").replace(/\p{Mn}/gu, "").replace(/[^a-z ]/g, " ").replace(/\s+/g, " ").trim();
 // Estados de EE. UU.: aún no están en el catálogo. Se reconocen por nombre (o alias) en cuanto entren; hasta entonces la medalla queda oculta.
-const esEstadoUS = (it) => !["pais", "bandera", "fisico", "espana"].includes(it.tipo) || /estado/.test(it.subtipo ?? "");
+const esEstadoUS = (it) => it.tipo === "estado";
 const estadosUS = (l) => { const x = new Set(l.split(",").map(nrm)); return (it) => esEstadoUS(it) && [it.nombre, ...(it.alias ?? [])].some((n) => x.has(nrm(n))); };
 const UNION = "Maine,Nuevo Hampshire,New Hampshire,Vermont,Massachusetts,Rhode Island,Connecticut,Nueva York,New York,Nueva Jersey,New Jersey,Pensilvania,Pennsylvania,Ohio,Indiana,Illinois,Míchigan,Michigan,Wisconsin,Minnesota,Iowa,California,Oregón,Oregon,Kansas,Virginia Occidental,West Virginia,Nevada,Delaware,Maryland,Kentucky,Misuri,Missouri";
 const CONFEDERACION = "Carolina del Sur,South Carolina,Misisipi,Mississippi,Florida,Alabama,Georgia,Luisiana,Louisiana,Texas,Virginia,Arkansas,Carolina del Norte,North Carolina,Tennessee";
@@ -69,6 +69,7 @@ export const MEDALLAS = [
   { id: "pc-luso", cat: "mundo", nombre: "Saudade", emoji: "🎸", desc: "Los países de lengua portuguesa", grupo: pc((i) => LUSO.has(i)) },
   { id: "pc-sinmar", cat: "mundo", nombre: "Ni una gota de mar", emoji: "🏜️", desc: "Todos los países sin salida al mar", grupo: pc((i) => SIN_MAR.has(i)) },
   { id: "pc-pacifico", cat: "mundo", nombre: "Navegante polinesio", emoji: "🛶", desc: "Las naciones insulares del Pacífico", grupo: pc((i) => PACIFICO.has(i)) },
+  { id: "ci-todas", cat: "mundo", nombre: "Cosmopolita", emoji: "🌆", desc: "Las 40 grandes ciudades del mundo que no son capital", grupo: (it) => it.tipo === "ciudad" },
   { id: "pc-todos", cat: "mundo", nombre: "Ciudadano del mundo", emoji: "🌐", desc: "Los 195 países con su capital", grupo: (it) => it.tipo === "pais" },
 
   // Banderas
@@ -133,7 +134,7 @@ export const MEDALLAS = [
   // Estados Unidos (aparecen cuando el catálogo incluya los estados)
   { id: "us-union", cat: "eeuu", nombre: "Billy Yank", emoji: "🔵", desc: "Los estados que lucharon con la Unión en la guerra de Secesión, con su capital", grupo: estadosUS(UNION) },
   { id: "us-confederacion", cat: "eeuu", nombre: "Johnny Reb", emoji: "⚪", desc: "Los 11 estados de la Confederación, con su capital", grupo: estadosUS(CONFEDERACION) },
-  { id: "us-todos", cat: "eeuu", nombre: "Ruta 66", emoji: "🛣️", desc: "Los 50 estados con su capital", grupo: (it) => esEstadoUS(it) && it.tipo !== "pais" },
+  { id: "us-todos", cat: "eeuu", nombre: "Ruta 66", emoji: "🛣️", desc: "Los 50 estados con su capital", grupo: esEstadoUS },
 
   // Hitos
   { id: "h-primera", cat: "hitos", tipo: "evento", nombre: "Primer sello en el pasaporte", emoji: "🛂", desc: "Termina tu primera sesión", nivelFijo: "bronce" },

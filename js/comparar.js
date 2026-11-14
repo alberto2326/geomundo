@@ -47,13 +47,17 @@ function baseVariantes(t) {
 }
 
 class Idx {
-  constructor(entradas, amb = [], variantes = null) {
+  constructor(entradas, amb = [], variantes = null, sinChoques = false) {
     this.k = new Map();
     this.amb = new Set(amb.map(fon));
+    // sinChoques: una variante abreviada («la paz» de «Ciudad de la Paz») no se añade si es el nombre completo de OTRA entidad (La Paz, Bolivia)
+    const completos = new Map();
+    if (sinChoques) for (const [txt, i] of entradas) { const kk = fon(norm(sinParentesis(txt))); if (kk) { if (!completos.has(kk)) completos.set(kk, new Set()); completos.get(kk).add(i); } }
     for (const [txt, i] of entradas) {
       for (const v of variantes ? variantes(txt) : baseVariantes(txt)) {
         const kk = fon(v);
         if (!kk) continue;
+        if (sinChoques && completos.has(kk) && !completos.get(kk).has(i)) continue;
         if (!this.k.has(kk)) this.k.set(kk, new Set());
         this.k.get(kk).add(i);
       }
@@ -226,13 +230,30 @@ export function crearMotor(items) {
     }
     return cache.get(pref);
   }
-  function idxCap() {
-    if (!cache.has("cap")) {
+  function idxCap(tipo = "pais") {
+    const k = "cap-" + tipo;
+    if (!cache.has(k)) {
       const ent = [];
-      for (const it of items) if (it.tipo === "pais") for (const c of it.capitales) for (const t of new Set([c.nombre, c.clave, ...(c.alias || [])])) ent.push([t, it.id]);
-      cache.set("cap", new Idx(ent, [], varsCap));
+      for (const it of items) if (it.tipo === tipo) for (const c of it.capitales) for (const t of new Set([c.nombre, c.clave, ...(c.alias || [])])) ent.push([t, it.id]);
+      cache.set(k, new Idx(ent, [], varsCap, true));
     }
-    return cache.get("cap");
+    return cache.get(k);
+  }
+  function idxEstados() {
+    if (!cache.has("est")) {
+      const ent = [];
+      for (const it of items) if (it.tipo === "estado") { ent.push([it.nombre, it.id]); for (const a of it.alias || []) ent.push([a, it.id]); }
+      cache.set("est", new Idx(ent));
+    }
+    return cache.get("est");
+  }
+  function idxCiudades() {
+    if (!cache.has("ciu")) {
+      const ent = [];
+      for (const it of items) if (it.tipo === "ciudad") { ent.push([it.nombre, it.id]); for (const a of it.alias || []) ent.push([a, it.id]); }
+      cache.set("ciu", new Idx(ent, [], varsCap));
+    }
+    return cache.get("ciu");
   }
   function idxFis(sub) {
     const k = "fis-" + sub;
@@ -256,10 +277,12 @@ export function crearMotor(items) {
     return w.join(" ") || null;
   }
   function compararPais(it, resp) {
+    const ent = it.tipo === "estado" ? (t) => idxEstados().resolver(t) : (t) => idxPais("pc-").resolver(t);
+    const cap = (t) => idxCap(it.tipo).resolver(t);
     if (esVacia(resp)) return ["vacia", { nota: "sin respuesta", partes: { pais: null, capital: null } }];
     let mejor = null;
     for (const [tp, tc] of partir(resp)) {
-      const rp = tp ? idxPais("pc-").resolver(tp) : null, rc = tc ? idxCap().resolver(tc) : null;
+      const rp = tp ? ent(tp) : null, rc = tc ? cap(tc) : null;
       const sp = rp ? sc(rp) : 0, scc = rc ? sc(rc) : 0;
       if (tp && tc && !(sp || scc)) continue;
       let total = sp + scc;
@@ -305,6 +328,11 @@ export function crearMotor(items) {
     if (info.interpretada) info.interpretada_nombre = nombre(info.interpretada);
     return [r, info];
   }
+  function compararCiudad(it, resp) {
+    const [r, info] = decidir(idxCiudades().resolver(resp, varsCap), it.id);
+    if (info.interpretada) info.interpretada_nombre = nombre(info.interpretada);
+    return [r, info];
+  }
   function compararEspana(it, resp) {
     const [r, s] = esComparar(it, resp);
     if (r === "mal" || r === "casi") {
@@ -315,10 +343,10 @@ export function crearMotor(items) {
     return [r, { puntuacion: pyRound(s), nota }];
   }
   function comparar(it, resp) {
-    return { pais: compararPais, bandera: compararBandera, fisico: compararFisico, espana: compararEspana }[it.tipo](it, resp);
+    return { pais: compararPais, estado: compararPais, bandera: compararBandera, fisico: compararFisico, espana: compararEspana, ciudad: compararCiudad }[it.tipo](it, resp);
   }
   return { comparar, porId: P, norm };
 }
 
 export function capitalesTexto(it) { return it.capitales.map((c) => c.nombre).join(" / "); }
-export function respuestaTexto(it) { return it.tipo === "pais" ? `${it.nombre} · capital: ${capitalesTexto(it)}` : it.nombre; }
+export function respuestaTexto(it) { return it.capitales ? `${it.nombre} · capital: ${capitalesTexto(it)}` : it.nombre; }
