@@ -133,9 +133,9 @@ export const MEDALLAS = [
   { id: "cu-baleares", cat: "curiosas", nombre: "Ensaimada", emoji: "🥐", desc: "Mallorca, Menorca, Ibiza, Formentera y Cabrera", grupo: (it) => it.tipo === "espana" && it.subtipo === "isla" && ["Mallorca", "Menorca", "Ibiza", "Formentera", "Cabrera"].includes(it.nombre) },
 
   // Estados Unidos (aparecen cuando el catálogo incluya los estados)
-  { id: "us-union", cat: "eeuu", nombre: "Billy Yank", emoji: "🔵", desc: "Los estados que lucharon con la Unión en la guerra de Secesión, con su capital", grupo: estadosUS(UNION) },
-  { id: "us-confederacion", cat: "eeuu", nombre: "Johnny Reb", emoji: "⚪", desc: "Los 11 estados de la Confederación, con su capital", grupo: estadosUS(CONFEDERACION) },
-  { id: "us-todos", cat: "eeuu", nombre: "Ruta 66", emoji: "🛣️", desc: "Los 50 estados con su capital", grupo: esEstadoUS },
+  { id: "us-union", cat: "eeuu", nombre: "Billy Yank", emoji: "🔵", desc: "Los estados que lucharon con la Unión en la guerra de Secesión", grupo: estadosUS(UNION) },
+  { id: "us-confederacion", cat: "eeuu", nombre: "Johnny Reb", emoji: "⚪", desc: "Los 11 estados de la Confederación", grupo: estadosUS(CONFEDERACION) },
+  { id: "us-todos", cat: "eeuu", nombre: "Ruta 66", emoji: "🛣️", desc: "Los 50 estados de EE. UU.", grupo: esEstadoUS },
 
   // Hitos
   { id: "h-primera", cat: "hitos", tipo: "evento", nombre: "Primer sello en el pasaporte", emoji: "🛂", desc: "Termina tu primera sesión", nivelFijo: "bronce" },

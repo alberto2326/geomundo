@@ -139,7 +139,7 @@ async function empezar() {
 // ---------- pregunta ----------
 function textoCorto(it) {
   if (it.tipo === "pais") return "¿Qué país está marcado en rojo y cuál es su capital?";
-  if (it.tipo === "estado") return "¿Qué estado de EE. UU. está marcado en rojo y cuál es su capital?";
+  if (it.tipo === "estado") return "¿Qué estado de EE. UU. está marcado en rojo?";
   return it.pregunta;
 }
 function imgsHTML(it, solucion = false) {
@@ -163,7 +163,7 @@ function pregunta() {
     ${imgsHTML(it)}
     <form class="respuesta" id="f" autocomplete="off">
       <input id="r" type="text" enterkeyhint="send" autocomplete="off" autocorrect="off" autocapitalize="sentences" spellcheck="false"
-        placeholder="${it.tipo === "pais" ? "País y capital: «Kenia, Nairobi»" : it.tipo === "estado" ? "Estado y capital: «Texas, Austin»" : "Tu respuesta"}" aria-label="Tu respuesta">
+        placeholder="${it.tipo === "pais" ? "País y capital: «Kenia, Nairobi»" : it.tipo === "estado" ? "Nombre del estado" : "Tu respuesta"}" aria-label="Tu respuesta">
       <button class="btn prim" type="submit">${q.n < tot ? "Siguiente" : "Terminar y corregir"}</button>
     </form>
     <button class="btn" id="nose">No lo sé</button>
@@ -194,7 +194,7 @@ function bloqueCorreccion(n) {
     : q.resultado === "parcial" ? "A medias (cuenta como fallo)" : q.resultado === "casi" ? "Casi: concreta un poco más" : q.resultado === "vacia" ? "Sin respuesta" : "No era eso";
   return `<div class="resultado ${ok ? "ok" : medio ? "medio" : "mal"}">
       <h2>${ok ? "✅" : medio ? "🟠" : "❌"} ${esc(titulo)}</h2>
-      ${!ok ? `<p>Era <b>${esc(r.correcta)}</b>.</p>` : it.capitales ? `<p><b>${esc(r.correcta)}</b></p>` : `<p><b>${esc(it.nombre)}</b></p>`}
+      ${!ok ? `<p>Era <b>${esc(r.correcta)}</b>.</p>` : it.capitales || it.capital_ref ? `<p><b>${esc(r.correcta)}</b></p>` : `<p><b>${esc(it.nombre)}</b></p>`}
       ${r.lineas.length ? `<ul class="partes">${r.lineas.map((l) => `<li>${esc(l)}</li>`).join("")}</ul>` : ""}
       ${r.interpretada ? `<p>Lo que dijiste es <b>${esc(r.interpretada)}</b>.</p>` : ""}
       ${q.resultado === "casi" && r.nota ? `<p class="suave">(${esc(r.nota)})</p>` : ""}
@@ -237,7 +237,7 @@ function hoja(irA = null) {
   const bor = { ...(ses.borradores ?? {}) };
   const ac = ses.preguntas.filter((q) => q.resultado === "correcta").length;
   const cabecera = pend.length
-    ? `<h1>${esc(ses.sesion)} · ${tot} preguntas</h1><p class="suave">Escribe la respuesta de cada pregunta y pulsa «Corregir» al final.${ses.preguntas.some((q) => app.P.get(q.id).capitales) ? " En país (o estado) y capital, di las dos cosas." : ""}</p>`
+    ? `<h1>${esc(ses.sesion)} · ${tot} preguntas</h1><p class="suave">Escribe la respuesta de cada pregunta y pulsa «Corregir» al final.${ses.preguntas.some((q) => app.P.get(q.id).capitales) ? " En país y capital, di las dos cosas." : ""}</p>`
     : `<h1>${ac}/${tot} aciertos</h1><p>Aquí tienes las ${tot} correcciones. <a href="#" data-ir="resumen">Ver resumen</a></p>`;
   vista.innerHTML = `${cabecera}
     ${ses.preguntas.map((q) => {
@@ -245,7 +245,7 @@ function hoja(irA = null) {
       return `<section class="preg tarjeta" id="p${q.n}" data-n="${q.n}">
         <div class="cabeza"><span class="num">${q.n}/${tot}</span><span class="etiqueta">${esc(NOMBRE_TIPO[it.tipo])}${q.modo === "repaso" ? " · repaso" : ""}</span></div>
         ${q.corregida ? "" : `<p class="pregunta corta">${esc(textoCorto(it))}</p>${imgsHTML(it)}`}
-        ${q.corregida ? bloqueCorreccion(q.n) : `<input class="caja" id="r${q.n}" data-n="${q.n}" type="text" enterkeyhint="next" autocomplete="off" autocorrect="off" spellcheck="false" placeholder="${it.tipo === "pais" ? "País y capital" : it.tipo === "estado" ? "Estado y capital" : "Tu respuesta"}" value="${esc(bor[q.n] ?? "")}">`}
+        ${q.corregida ? bloqueCorreccion(q.n) : `<input class="caja" id="r${q.n}" data-n="${q.n}" type="text" enterkeyhint="next" autocomplete="off" autocorrect="off" spellcheck="false" placeholder="${it.tipo === "pais" ? "País y capital" : it.tipo === "estado" ? "Nombre del estado" : "Tu respuesta"}" value="${esc(bor[q.n] ?? "")}">`}
       </section>`;
     }).join("")}
     ${pend.length ? `<div class="espaciador"></div>

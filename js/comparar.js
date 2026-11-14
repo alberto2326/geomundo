@@ -276,8 +276,13 @@ export function crearMotor(items) {
     const w = t.split(" ").filter((x) => x && !CONECT.has(x));
     return w.join(" ") || null;
   }
+  function compararEstado(it, resp) {
+    const [r, info] = decidir(idxEstados().resolver(resp), it.id);
+    if (info.interpretada) info.interpretada_nombre = nombre(info.interpretada);
+    return [r, info];
+  }
   function compararPais(it, resp) {
-    const ent = it.tipo === "estado" ? (t) => idxEstados().resolver(t) : (t) => idxPais("pc-").resolver(t);
+    const ent = (t) => idxPais("pc-").resolver(t);
     const cap = (t) => idxCap(it.tipo).resolver(t);
     if (esVacia(resp)) return ["vacia", { nota: "sin respuesta", partes: { pais: null, capital: null } }];
     let mejor = null;
@@ -343,10 +348,10 @@ export function crearMotor(items) {
     return [r, { puntuacion: pyRound(s), nota }];
   }
   function comparar(it, resp) {
-    return { pais: compararPais, estado: compararPais, bandera: compararBandera, fisico: compararFisico, espana: compararEspana, ciudad: compararCiudad }[it.tipo](it, resp);
+    return { pais: compararPais, estado: compararEstado, bandera: compararBandera, fisico: compararFisico, espana: compararEspana, ciudad: compararCiudad }[it.tipo](it, resp);
   }
   return { comparar, porId: P, norm };
 }
 
 export function capitalesTexto(it) { return it.capitales.map((c) => c.nombre).join(" / "); }
-export function respuestaTexto(it) { return it.capitales ? `${it.nombre} · capital: ${capitalesTexto(it)}` : it.nombre; }
+export function respuestaTexto(it) { if (it.capital_ref) return `${it.nombre} (capital: ${it.capital_ref.join(" / ")})`; return it.capitales ? `${it.nombre} · capital: ${capitalesTexto(it)}` : it.nombre; }

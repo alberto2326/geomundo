@@ -33,9 +33,10 @@ for k, it in enumerate(ld("datos_estados50.json")):
     c = caps(it["capitales"])
     for x in c:
         x["alias"] = x["alias"] + [a for a in EXTRA_ALIAS_CAP.get(it["id"], []) if a not in x["alias"]]
-    items[it["id"]] = dict(id=it["id"], tipo="estado", subtipo="estado_capital", nombre=it["estado"], alias=it["alias_estado"], nivel=1, extra=False,
-                          orden=[k], dato=it.get("curiosidad", ""), pregunta=it["pregunta"], titulo="¿ESTADO y CAPITAL?", imagenes="cercana+contexto",
-                          postal=it.get("postal"), capitales=c)
+    # Decisión de Alberto (14-11-2026): de los estados solo se pregunta el nombre; la capital se muestra al corregir, como dato.
+    items[it["id"]] = dict(id=it["id"], tipo="estado", subtipo="estado", nombre=it["estado"], alias=it["alias_estado"], nivel=1, extra=False,
+                          orden=[k], dato=it.get("curiosidad", ""), pregunta="¿Qué ESTADO de EE. UU. está resaltado en el mapa (en rojo o señalado con la flecha)?",
+                          titulo="¿Qué ESTADO es?", imagenes="cercana+contexto", postal=it.get("postal"), capital_ref=[x["nombre"] for x in c])
 # Ciudades del mundo (nuevas)
 for k, it in enumerate(ld("datos_ciudades40.json")):
     items[it["id"]] = dict(id=it["id"], tipo="ciudad", subtipo="ciudad", nombre=it["nombre"], alias=it.get("alias", []), nivel=1, extra=False,

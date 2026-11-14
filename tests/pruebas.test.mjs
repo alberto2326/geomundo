@@ -25,13 +25,13 @@ test("§9.2 catálogo: 1422 ids únicos, 195/200/566/371 + 50 estados + 40 ciuda
 
 test("dictado: estados, ciudades y capitales que chocan", () => {
   const c = (id, r) => motor.comparar(motor.porId.get(id), r)[0];
-  assert.equal(c("us-tx", "Texas, Austin"), "ok");
-  assert.equal(c("us-tx", "Texas"), "parcial");
-  assert.equal(c("us-tx", "Texas, Houston"), "parcial");
-  assert.equal(c("us-mn", "Minnesota, Saint Paul"), "ok");
-  assert.equal(c("us-ny", "Nueva York, Albany"), "ok");
-  assert.equal(c("us-ga", "Georgia, Atlanta"), "ok");
-  assert.equal(c("us-wa", "Washington, Olympia"), "ok");
+  assert.equal(c("us-tx", "Texas"), "ok");
+  assert.equal(c("us-tx", "Oklahoma"), "mal");
+  assert.equal(c("us-ny", "New York"), "ok");
+  assert.equal(c("us-ga", "Georgia"), "ok");
+  assert.equal(c("us-wv", "Virginia"), "mal");
+  assert.equal(c("us-va", "Virginia"), "ok");
+  assert.equal(c("us-wa", "Washington"), "ok");
   assert.equal(c("pc-bo", "Bolivia, La Paz"), "ok");
   assert.equal(c("pc-gq", "Guinea Ecuatorial, Malabo"), "ok");
   assert.equal(c("pc-gq", "Guinea Ecuatorial, Ciudad de la Paz"), "ok");
