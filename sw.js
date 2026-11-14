@@ -1,5 +1,5 @@
 // Service worker: la app funciona sin conexión. Al publicar una versión nueva, cambia VERSION.
-const VERSION = "2.0.1";
+const VERSION = "2.1.0";
 const SHELL = `geomundo-app-${VERSION}`, IMG = "geomundo-img-1";
 const ARCHIVOS = ["./", "index.html", "app.css", "manifest.webmanifest", "data/catalogo.json", "data/cuarentena.json", "data/config.json",
   "js/app.js", "js/logica.js", "js/srs.js", "js/comparar.js", "js/almacen.js", "js/util.js", "js/logros.js", "js/medallas_ui.js",
