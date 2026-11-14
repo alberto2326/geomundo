@@ -200,7 +200,7 @@ function bloqueCorreccion(n) {
       ${q.resultado === "casi" && r.nota ? `<p class="suave">(${esc(r.nota)})</p>` : ""}
       <p class="suave">Tu respuesta: «${esc(q.respuesta)}»</p>
     </div>
-    <div class="dato">💡 ${esc(it.dato)}</div>
+    ${it.dato ? `<div class="dato">💡 ${esc(it.dato)}</div>` : ""}
     ${imgsHTML(it, true)}
     <p class="suave">Próximo repaso: ${esc(fechaLarga(q.proxima_revision))} (${r.dias === 1 ? "mañana" : `en ${r.dias} días`}).</p>
     ${!ok ? `<details><summary>El dictado se equivocó / quiero reevaluar</summary>
