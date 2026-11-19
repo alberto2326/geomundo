@@ -4,7 +4,7 @@ import { crearSRS, estadoNuevo, C } from "./srs.js";
 import { fechaMadrid, isoMadrid, esFecha, sha256Hex, clonar } from "./util.js";
 import { evaluar, actualizar, CRITERIO_VERSION, porId as medallaPorId } from "./logros.js";
 
-export const APP_VERSION = "2.2.0";
+export const APP_VERSION = "2.3.0";
 export const FORMATO = "geomundo-progreso";
 export const VERSION_FORMATO = 1;
 const CONTADOR_ORIGEN = 75; // la última sesión del sistema original fue ses-0075
@@ -66,7 +66,7 @@ export async function crearApp({ catalogo, almacen, cuarentena = [], imagenes = 
       if (pendiente(d.sesion)) return { sesion: d.sesion, nueva: false };
       if (!d.estado) throw new Error("No hay progreso cargado");
       const numero = (d.meta.contador ?? 0) + 1;
-      const ses = srs.crearSesion(clonar(d.estado), hoy(), numero, excluidos(), mezcla);
+      const ses = srs.crearSesion(clonar(d.estado), hoy(), numero, excluidos(), mezcla, config?.max_aprendiendo ? { max: config.max_aprendiendo, tipos } : null);
       if (!ses) return { sesion: null, nueva: false, sinItems: true };
       d.sesion = ses; d.meta = { ...d.meta, contador: numero };
       await guardar(["sesion", "meta"]);

@@ -219,13 +219,24 @@ test("config: mezcla de seis tipos, todas con imagen; el progreso se conserva", 
   for (let k = 0; k < 5; k++) {
     const { sesion } = await app.sesionActual();
     assert.equal(sesion.preguntas.length, 10);
-    const n = (t) => sesion.preguntas.filter((q) => q.tipo === t).length;
-    assert.deepEqual(C.TIPOS.map(n), C.TIPOS.map((t) => config.mezcla[t]));
-    for (let j = 0; j + 1 < 10; j++) assert.notEqual(sesion.preguntas[j].tipo, sesion.preguntas[j + 1].tipo);
+    // con 102 ítems a medio aprender y tope 60, no entra nada nuevo: todo son repasos o práctica
+    assert.equal(sesion.preguntas.filter((q) => q.modo === "nuevo").length, 0);
     for (const q of sesion.preguntas) assert.ok(indice[q.id]?.q);
     for (const q of sesion.preguntas) await app.responder(q.n, "no sé");
   }
   assert.ok(Object.keys(app.estado().items).some((i) => i.startsWith("fi-"))); // el progreso de lo demás se conserva
   const m = app.medallas().medallas;
   assert.ok(!m["fi-mar"].oculta && !m["es-todo"].oculta && !m["us-union"].oculta && !m["ci-todas"].oculta);
+});
+
+test("tope global: con 60 o más a medio aprender no entran nuevos; por debajo, solo hasta el tope", async () => {
+  const st = estadoNuevo(); const g = { max: 60, tipos: C.TIPOS };
+  const pais = catalogo.items.filter((i) => i.tipo === "pais").slice(0, 60);
+  for (const it of pais) st.items[it.id] = { ef: 2.5, reps: 1, intervalo: 4, vence: "2026-12-30", ultimo: "2026-11-19", historial: [["2026-11-19", 1]] };
+  let ses = srs.crearSesion(structuredClone(st), "2026-11-20", 1, new Set(), C.MEZCLA, g);
+  assert.equal(ses.preguntas.filter((q) => q.modo === "nuevo").length, 0);
+  delete st.items[pais[0].id]; delete st.items[pais[1].id]; delete st.items[pais[2].id]; // 57 → caben 3
+  ses = srs.crearSesion(structuredClone(st), "2026-11-20", 2, new Set(), C.MEZCLA, g);
+  assert.equal(ses.preguntas.filter((q) => q.modo === "nuevo").length, 3);
+  assert.equal(ses.preguntas.length, 10);
 });

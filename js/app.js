@@ -84,9 +84,10 @@ function inicio() {
   }
   let sesNec = 0; for (let d = debidos, N = C.SESION_N; d > 0; sesNec++) d -= d <= 3 * N ? Math.ceil(0.6 * N) : N - 1;
   const hechasHoy = (app.datos.logros?.sesiones ?? []).filter((x) => x.fecha === hoy).length;
+  const tope = app.config?.max_aprendiendo ?? 0, aprendiendo = tope ? app.srs.enAprendizajeTotal(app.estado() ?? { items: {} }, app.tipos) : 0;
   const plan = `<p class="plan">${hechasHoy ? `<span>Hoy llevas <b>${hechasHoy}</b> sesi${hechasHoy === 1 ? "ón" : "ones"}</span>` : ""}${debidos
       ? `<span>Te ${debidos === 1 ? "toca <b>1 repaso</b>" : `tocan <b>${debidos} repasos</b>`} · ${sesNec === 1 ? "1 sesión" : `unas ${sesNec} sesiones`}</span>`
-      : `<span>✅ Repasos de hoy al día${hechasHoy ? "" : ""}</span>`}<span class="suave">Mañana: ${manana}</span></p>`;
+      : `<span>✅ Repasos de hoy al día${hechasHoy ? "" : ""}</span>`}<span class="suave">Mañana: ${manana}</span>${tope ? `<span class="suave">${aprendiendo >= tope ? `Nuevos en pausa: ${aprendiendo} a medio aprender (tope ${tope})` : `A medio aprender: ${aprendiendo} de ${tope}`}</span>` : ""}</p>`;
   let estadoDia;
   if (pend) estadoDia = `<p>Tienes la sesión <b>${esc(ses.sesion)}</b> a medias: vas por la <b>${pend.n}/${ses.preguntas.length}</b>.</p><button class="btn prim" id="empezar">Continuar sesión</button>`;
   else if (hechaHoy) estadoDia = `<p>${debidos ? "Aún te quedan repasos de hoy." : "Has hecho los repasos de hoy. Otra sesión te trae países nuevos y práctica."}</p><button class="btn ${debidos ? "prim" : ""}" id="empezar">Otra sesión de ${C.SESION_N}</button>`;

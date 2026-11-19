@@ -55,8 +55,13 @@ export function crearSRS(items, motor) {
     if (C.TOPE_UMBRAL[tipo]) need = Math.min(need, C.TOPE_UMBRAL[tipo]);
     return ok >= need;
   }
-  function nuevasPermitidas(st, tipo) {
-    const cupo = C.POOL_MAX[tipo] - enAprendizaje(st, tipo);
+  function enAprendizajeTotal(st, tipos) {
+    let n = 0; for (const [i, r] of Object.entries(st.items)) if (P.has(i) && tipos.includes(P.get(i).tipo) && (r.reps ?? 0) < C.CONSOLIDADA_REPS) n++; return n;
+  }
+  /** Huecos para nuevos de un tipo: el menor entre el cupo del tipo y el cupo global (opcional) de ítems «a medio aprender». */
+  function nuevasPermitidas(st, tipo, global = null) {
+    let cupo = C.POOL_MAX[tipo] - enAprendizaje(st, tipo);
+    if (global) cupo = Math.min(cupo, global.max - enAprendizajeTotal(st, global.tipos));
     if (cupo <= 0) return [[], 0];
     const cand = [], abiertos = new Map();
     for (const it of ordenados[tipo]) {
@@ -102,7 +107,7 @@ export function crearSRS(items, motor) {
   }
 
   /** Elige SESION_N ítems [[item, modo]] o null. `excluir`: ids que no deben salir (cuarentena, sin imagen). */
-  function seleccionar(st, hoy, semilla, excluir = new Set(), mezcla = C.MEZCLA) {
+  function seleccionar(st, hoy, semilla, excluir = new Set(), mezcla = C.MEZCLA, global = null) {
     const rng = crearAzar(semilla), reg = st.items;
     const usados = new Set(), claves = new Set(), subs = Object.fromEntries(C.TIPOS.map((t) => [t, new Set()]));
     let sel = [];
@@ -119,7 +124,7 @@ export function crearSRS(items, motor) {
     }
     function tomar(T, k) {
       const [venc, fut] = datos(T);
-      let [cand, cupo] = nuevasPermitidas(st, T);
+      let [cand, cupo] = nuevasPermitidas(st, T, global);
       cand = cand.filter((c) => !usados.has(c.id) && !claves.has(claveDup(c)) && !excluir.has(c.id));
       const got = [];
       const add = (it, modo) => { got.push([it, modo]); usados.add(it.id); claves.add(claveDup(it)); subs[T].add(it.subtipo); };
@@ -129,7 +134,7 @@ export function crearSRS(items, motor) {
         if (usados.has(i) || claves.has(claveDup(P.get(i)))) continue;
         add(P.get(i), "repaso");
       }
-      const nn = Math.min(k - got.length, cupo);
+      const nn = Math.min(k - got.length, cupo - (global ? sel.filter((g) => g[1] === "nuevo").length : 0));
       if (nn > 0) for (const it of elegirNuevos(T, cand, nn, st, rng, claves, subs[T])) { got.push([it, "nuevo"]); usados.add(it.id); }
       for (const i of venc) {
         if (got.length >= k) break;
@@ -153,8 +158,8 @@ export function crearSRS(items, motor) {
     return ordenar(sel.slice(0, C.SESION_N), rng);
   }
 
-  function crearSesion(st, hoy, numero, excluir, mezcla) {
-    const el = seleccionar(st, hoy, `${hoy}-${numero}`, excluir, mezcla);
+  function crearSesion(st, hoy, numero, excluir, mezcla, global = null) {
+    const el = seleccionar(st, hoy, `${hoy}-${numero}`, excluir, mezcla, global);
     if (!el) return null;
     return {
       sesion: `ses-${String(numero).padStart(4, "0")}`, fecha: hoy, creada_en: new Date().toISOString(),
@@ -244,5 +249,5 @@ export function crearSRS(items, motor) {
     };
   }
 
-  return { seleccionar, crearSesion, corregir, estadisticas, nivelAbierto, nuevasPermitidas, retroalimentacion };
+  return { enAprendizajeTotal, seleccionar, crearSesion, corregir, estadisticas, nivelAbierto, nuevasPermitidas, retroalimentacion };
 }
