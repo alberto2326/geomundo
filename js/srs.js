@@ -117,7 +117,8 @@ export function crearSRS(items, motor) {
       for (const [i, r] of Object.entries(reg)) {
         if (!vale(i) || P.get(i).tipo !== T || r.reservado) continue;
         const v = r.vence ?? "9999";
-        if (v <= hoy) venc.push([v, r.ef ?? 2.5, i]); else fut.push([r.ultimo === hoy ? 1 : 0, v, r.ef ?? 2.5, i]);
+        // Lo ya contestado hoy no vuelve como práctica el mismo día (evita repetir un fallo recién visto y penalizarlo dos veces)
+        if (v <= hoy) venc.push([v, r.ef ?? 2.5, i]); else if (r.ultimo !== hoy) fut.push([0, v, r.ef ?? 2.5, i]);
       }
       const cmp = (a, b) => { for (let k = 0; k < a.length; k++) if (a[k] !== b[k]) return a[k] < b[k] ? -1 : 1; return 0; };
       return [venc.sort(cmp).map((x) => x[2]), fut.sort(cmp).map((x) => x[3])];

@@ -240,3 +240,14 @@ test("tope global: con 60 o más a medio aprender no entran nuevos; por debajo, 
   assert.equal(ses.preguntas.filter((q) => q.modo === "nuevo").length, 3);
   assert.equal(ses.preguntas.length, 10);
 });
+
+test("lo contestado hoy no vuelve como práctica ese mismo día", () => {
+  const st = estadoNuevo();
+  const est = catalogo.items.filter((i) => i.tipo === "estado").slice(0, 3);
+  for (const it of est) st.items[it.id] = { ef: 2.5, reps: 0, intervalo: 1, vence: "2026-11-21", ultimo: "2026-11-20", historial: [["2026-11-20", 0]] };
+  for (let k = 0; k < 10; k++) {
+    const ses = srs.crearSesion(structuredClone(st), "2026-11-20", k + 1, new Set(), { pais: 3, bandera: 2, fisico: 2, espana: 1, estado: 1, ciudad: 1 }, { max: 60, tipos: C.TIPOS });
+    for (const q of ses.preguntas) assert.ok(!est.some((e) => e.id === q.id), "salió " + q.id);
+    assert.equal(ses.preguntas.length, 10);
+  }
+});
