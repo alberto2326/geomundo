@@ -251,3 +251,14 @@ test("lo contestado hoy no vuelve como práctica ese mismo día", () => {
     assert.equal(ses.preguntas.length, 10);
   }
 });
+
+test("si solo quedan repasos de un tipo, llenan la sesión antes que la práctica", () => {
+  const st = estadoNuevo();
+  const fis = catalogo.items.filter((i) => i.tipo === "fisico").slice(0, 20);
+  const pais = catalogo.items.filter((i) => i.tipo === "pais").slice(0, 70);
+  for (const it of fis) st.items[it.id] = { ef: 2.5, reps: 2, intervalo: 6, vence: "2026-11-19", ultimo: "2026-11-13", historial: [] };
+  for (const it of pais) st.items[it.id] = { ef: 2.5, reps: 1, intervalo: 4, vence: "2026-12-30", ultimo: "2026-11-18", historial: [] }; // tope lleno, sin repasos
+  const ses = srs.crearSesion(st, "2026-11-20", 1, new Set(), { pais: 3, bandera: 2, fisico: 2, espana: 1, estado: 1, ciudad: 1 }, { max: 60, tipos: C.TIPOS });
+  assert.equal(ses.preguntas.filter((q) => q.modo === "repaso").length, 10);
+  assert.equal(ses.preguntas.filter((q) => q.modo === "practica").length, 0);
+});

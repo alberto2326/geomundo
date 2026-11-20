@@ -167,6 +167,14 @@ export function crearSRS(items, motor) {
       for (const T of orden) { if (sel.length >= C.SESION_N) break; const ya = sel.filter((g) => g[0].tipo === T).length; if (ya < maxTipo) sel = sel.concat(tomar(T, Math.min(C.SESION_N - sel.length, maxTipo - ya))); }
       if (sel.length === antes) break;
     }
+    // 2b) Si siguen quedando huecos y solo quedan repasos de uno o dos tipos, van sin límite por tipo
+    //     (pueden salir seguidos del mismo tipo: mejor un repaso pendiente que una práctica)
+    for (let guard = 0; sel.length < C.SESION_N && guard < 20; guard++) {
+      const antes = sel.length;
+      const orden = C.TIPOS.filter((T) => mezcla[T] !== undefined || C.RELLENO_PREF.includes(T)).sort((x, y) => vencidosLibres(y) - vencidosLibres(x));
+      for (const T of orden) { if (sel.length >= C.SESION_N) break; sel = sel.concat(tomar(T, C.SESION_N - sel.length)); }
+      if (sel.length === antes) break;
+    }
     // 3) Solo si no queda ningún repaso pendiente ni nuevo posible: práctica extra, repartida según la mezcla
     for (let guard = 0; sel.length < C.SESION_N && guard < 20; guard++) {
       const antes = sel.length;
