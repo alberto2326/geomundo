@@ -94,13 +94,26 @@ export function crearSRS(items, motor) {
     }
     return out;
   }
+  /** Ordena sin dos del mismo tipo seguidos (ni, si se puede, del mismo subtipo): reparto voraz por el tipo con más pendientes. */
   function ordenar(sel, rng) {
     let mejor = null;
-    for (let k = 0; k < 400; k++) {
-      const x = rng.shuffle([...sel]);
+    for (let intento = 0; intento < 60; intento++) {
+      const grupos = new Map();
+      for (const x of rng.shuffle([...sel])) { const t = x[0].tipo; if (!grupos.has(t)) grupos.set(t, []); grupos.get(t).push(x); }
+      const out = [];
+      while (out.length < sel.length) {
+        const prev = out[out.length - 1];
+        const opciones = [...grupos.entries()].filter(([t, l]) => l.length && (!prev || t !== prev[0].tipo));
+        const pool = opciones.length ? opciones : [...grupos.entries()].filter(([, l]) => l.length);
+        const max = Math.max(...pool.map(([, l]) => l.length));
+        const cand = pool.filter(([, l]) => l.length === max);
+        const [, lista] = cand[Math.floor(rng.random() * cand.length)];
+        let k = lista.findIndex((x) => !prev || x[0].subtipo !== prev[0].subtipo); if (k < 0) k = 0;
+        out.push(lista.splice(k, 1)[0]);
+      }
       let pen = 0;
-      for (let j = 0; j + 1 < x.length; j++) { if (x[j][0].tipo === x[j + 1][0].tipo) pen += 1000; if (x[j][0].subtipo === x[j + 1][0].subtipo) pen += 10; }
-      if (mejor === null || pen < mejor[0]) mejor = [pen, x];
+      for (let j = 0; j + 1 < out.length; j++) { if (out[j][0].tipo === out[j + 1][0].tipo) pen += 1000; if (out[j][0].subtipo === out[j + 1][0].subtipo) pen += 10; }
+      if (mejor === null || pen < mejor[0]) mejor = [pen, out];
       if (pen === 0) break;
     }
     return mejor[1];
@@ -123,37 +136,43 @@ export function crearSRS(items, motor) {
       const cmp = (a, b) => { for (let k = 0; k < a.length; k++) if (a[k] !== b[k]) return a[k] < b[k] ? -1 : 1; return 0; };
       return [venc.sort(cmp).map((x) => x[2]), fut.sort(cmp).map((x) => x[3])];
     }
-    function tomar(T, k) {
+    const nuevosEn = (T) => sel.filter((g) => g[1] === "nuevo" && (T == null || g[0].tipo === T)).length;
+    /** Toma hasta k ítems del tipo T. practica=false: solo repasos y nuevos; practica=true: solo práctica extra. */
+    function tomar(T, k, practica = false) {
       const [venc, fut] = datos(T);
-      let [cand, cupo] = nuevasPermitidas(st, T, global);
-      cand = cand.filter((c) => !usados.has(c.id) && !claves.has(claveDup(c)) && !excluir.has(c.id));
       const got = [];
+      const libre = (i) => !usados.has(i) && !claves.has(claveDup(P.get(i)));
       const add = (it, modo) => { got.push([it, modo]); usados.add(it.id); claves.add(claveDup(it)); subs[T].add(it.subtipo); };
-      const maxRev = !cand.length ? k : venc.length <= 3 * k ? Math.ceil(0.6 * k) : Math.max(k - 1, 1);
-      for (const i of venc) {
-        if (got.filter((g) => g[1] === "repaso").length >= maxRev || got.length >= k) break;
-        if (usados.has(i) || claves.has(claveDup(P.get(i)))) continue;
-        add(P.get(i), "repaso");
-      }
-      const nn = Math.min(k - got.length, cupo - (global ? sel.filter((g) => g[1] === "nuevo").length : 0));
+      if (practica) { for (const i of fut) { if (got.length >= k) break; if (libre(i)) add(P.get(i), "practica"); } return got; }
+      let [cand, cupo] = nuevasPermitidas(st, T, global);
+      cupo -= nuevosEn(T); // nuevos de este tipo ya elegidos en esta sesión
+      if (global) cupo = Math.min(cupo, global.max - enAprendizajeTotal(st, global.tipos) - nuevosEn(null));
+      cand = cupo > 0 ? cand.filter((c) => !usados.has(c.id) && !claves.has(claveDup(c)) && !excluir.has(c.id)) : [];
+      const pend = venc.filter(libre);
+      const maxRev = !cand.length ? k : pend.length <= 3 * k ? Math.ceil(0.6 * k) : Math.max(k - 1, 1);
+      for (const i of pend) { if (got.length >= Math.min(k, maxRev)) break; if (libre(i)) add(P.get(i), "repaso"); }
+      const nn = Math.min(k - got.length, cupo);
       if (nn > 0) for (const it of elegirNuevos(T, cand, nn, st, rng, claves, subs[T])) { got.push([it, "nuevo"]); usados.add(it.id); }
-      for (const i of venc) {
-        if (got.length >= k) break;
-        if (usados.has(i) || claves.has(claveDup(P.get(i)))) continue;
-        add(P.get(i), "repaso");
-      }
-      for (const i of fut) {
-        if (got.length >= k) break;
-        if (usados.has(i) || claves.has(claveDup(P.get(i)))) continue;
-        add(P.get(i), "practica");
-      }
+      for (const i of pend) { if (got.length >= k) break; if (libre(i)) add(P.get(i), "repaso"); }
       return got;
     }
-    for (const T of C.TIPOS) sel = sel.concat(tomar(T, mezcla[T] ?? 0));
-    let guard = 0;
-    while (sel.length < C.SESION_N && guard < 20) {
-      guard++;
-      for (const T of C.RELLENO_PREF) { if (sel.length >= C.SESION_N) break; sel = sel.concat(tomar(T, C.SESION_N - sel.length)); }
+    const vencidosLibres = (T) => datos(T)[0].filter((i) => !usados.has(i)).length;
+    // 1) Cuota de cada tipo con sus repasos y nuevos
+    for (const T of C.TIPOS) if (mezcla[T]) sel = sel.concat(tomar(T, mezcla[T]));
+    // 2) Huecos libres: primero repasos (y nuevos si caben) de los tipos con más atraso
+    for (let guard = 0; sel.length < C.SESION_N && guard < 20; guard++) {
+      const antes = sel.length;
+      const orden = C.TIPOS.filter((T) => mezcla[T] !== undefined || C.RELLENO_PREF.includes(T)).sort((x, y) => vencidosLibres(y) - vencidosLibres(x));
+      const maxTipo = Math.ceil(C.SESION_N / 2); // nunca más de la mitad de un tipo: así siempre se pueden alternar
+      for (const T of orden) { if (sel.length >= C.SESION_N) break; const ya = sel.filter((g) => g[0].tipo === T).length; if (ya < maxTipo) sel = sel.concat(tomar(T, Math.min(C.SESION_N - sel.length, maxTipo - ya))); }
+      if (sel.length === antes) break;
+    }
+    // 3) Solo si no queda ningún repaso pendiente ni nuevo posible: práctica extra, repartida según la mezcla
+    for (let guard = 0; sel.length < C.SESION_N && guard < 20; guard++) {
+      const antes = sel.length;
+      for (const T of C.TIPOS) { if (sel.length >= C.SESION_N) break; if (mezcla[T]) sel = sel.concat(tomar(T, Math.min(mezcla[T], C.SESION_N - sel.length), true)); }
+      if (sel.length === antes) for (const T of C.RELLENO_PREF) { if (sel.length >= C.SESION_N) break; sel = sel.concat(tomar(T, C.SESION_N - sel.length, true)); }
+      if (sel.length === antes) break;
     }
     if (sel.length < C.SESION_N) return null;
     return ordenar(sel.slice(0, C.SESION_N), rng);
