@@ -147,7 +147,7 @@ function inicio() {
       <div class="enlaces"><button class="btn" data-ir="estadisticas">Estadísticas</button><button class="btn" data-ir="medallas">Medallas</button></div>
     </section>
     ${pend ? `<button class="btn peligro" id="abandonar">Descartar la sesión a medias</button>` : ""}
-    <p class="pie">Versión ${APP_VERSION} · funciona sin conexión</p>`;
+    <p class="pie">Creada por Alberto Peñalba<br>Versión ${APP_VERSION} · funciona sin conexión</p>`;
   $("#empezar").onclick = empezar;
 
   app.verMedallas().then(celebrar);
