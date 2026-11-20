@@ -1,9 +1,9 @@
 // Service worker: la app funciona sin conexión. Al publicar una versión nueva, cambia VERSION.
-const VERSION = "2.4.1";
+const VERSION = "2.5.0";
 const SHELL = `geomundo-app-${VERSION}`, IMG = "geomundo-img-1";
 const ARCHIVOS = ["./", "index.html", "app.css", "manifest.webmanifest", "data/catalogo.json", "data/cuarentena.json", "data/config.json",
   "js/app.js", "js/logica.js", "js/srs.js", "js/comparar.js", "js/almacen.js", "js/util.js", "js/logros.js", "js/medallas_ui.js",
-  "icons/icon-192.png", "icons/icon-512.png", "icons/icon-maskable-512.png", "icons/apple-touch-icon.png"];
+  "icons/icon-192.png", "icons/icon-512.png", "icons/icon-maskable-512.png", "icons/apple-touch-icon.png", "fonts/inter-display-800.woff"];
 
 self.addEventListener("install", (e) => { e.waitUntil(caches.open(SHELL).then((c) => c.addAll(ARCHIVOS))); });
 self.addEventListener("activate", (e) => {

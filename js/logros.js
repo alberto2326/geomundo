@@ -55,7 +55,7 @@ export const MEDALLAS = [
   // Mundo: países y capitales
   { id: "pc-europa", cat: "mundo", nombre: "Interraíl completo", emoji: "🚆", desc: "Todos los países de Europa con su capital", grupo: pc(enCont("europa")) },
   { id: "pc-asia", cat: "mundo", nombre: "Ruta de la Seda", emoji: "🐫", desc: "Todos los países de Asia con su capital", grupo: pc(enCont("asia")) },
-  { id: "pc-africa", cat: "mundo", nombre: "Safari total", emoji: "🦁", desc: "Todos los países de África con su capital", grupo: pc(enCont("africa")) },
+  { id: "pc-africa", cat: "mundo", nombre: "Cuna de la humanidad", emoji: "👣", desc: "Todos los países de África con su capital", grupo: pc(enCont("africa")) },
   { id: "pc-norteamerica", cat: "mundo", nombre: "Del Yukón a Panamá", emoji: "🦅", desc: "Norteamérica, Centroamérica y el Caribe, con capitales", grupo: pc(enCont("norteamerica")) },
   { id: "pc-sudamerica", cat: "mundo", nombre: "Cóndor de los Andes", emoji: "🦙", desc: "Todos los países de Sudamérica con su capital", grupo: pc(enCont("sudamerica")) },
   { id: "pc-oceania", cat: "mundo", nombre: "Brújula austral", emoji: "🦘", desc: "Todos los países de Oceanía con su capital", grupo: pc(enCont("oceania")) },

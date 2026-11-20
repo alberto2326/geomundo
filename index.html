@@ -3,22 +3,24 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#14532d">
+<meta name="theme-color" content="#e3edf3" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0c1d29" media="(prefers-color-scheme: dark)">
 <meta name="robots" content="noindex, nofollow">
 <meta name="description" content="Entrenador personal de geografía con repetición espaciada.">
 <title>Geografía del Mundo</title>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icons/icon-192.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="preload" href="fonts/inter-display-800.woff" as="font" type="font/woff" crossorigin>
 <link rel="stylesheet" href="app.css">
 </head>
 <body>
 <header class="barra">
   <button class="marca" data-ir="inicio" aria-label="Inicio"><img src="icons/icon-192.png" alt=""><span>Geografía del Mundo</span></button>
   <nav>
-    <button data-ir="medallas" aria-label="Medallas">🏅</button>
-    <button data-ir="estadisticas" aria-label="Estadísticas">📊</button>
-    <button data-ir="progreso" aria-label="Copias de progreso">💾</button>
+    <button data-ir="medallas" aria-label="Medallas"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 3h8l-2.5 6h-3z"/><circle cx="12" cy="15" r="6"/><path d="m12 12.2.9 1.8 2 .3-1.45 1.4.35 2-1.8-.95-1.8.95.35-2L9.1 14.3l2-.3z"/></svg></button>
+    <button data-ir="estadisticas" aria-label="Estadísticas"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg></button>
+    <button data-ir="progreso" aria-label="Copias de progreso"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11m0 0-4-4m4 4 4-4"/><path d="M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3"/></svg></button>
   </nav>
 </header>
 <main id="vista" tabindex="-1"><p class="cargando">Cargando…</p></main>

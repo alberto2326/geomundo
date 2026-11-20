@@ -57,6 +57,7 @@ function avisar(texto, boton, accion, ms = 0) {
 function ir(pantalla, ...args) {
   if (!app.tieneProgreso() && !["bienvenida", "progreso"].includes(pantalla)) pantalla = "bienvenida";
   ({ inicio, bienvenida, pregunta, correccion, hoja, resumen, estadisticas, progreso, medallas: () => pantallaMedallas(app, vista) })[pantalla](...args);
+  document.querySelectorAll(".barra nav button").forEach((b) => (b.dataset.ir === pantalla ? b.setAttribute("aria-current", "page") : b.removeAttribute("aria-current")));
   window.scrollTo(0, 0); vista.focus({ preventScroll: true });
 }
 
@@ -72,6 +73,19 @@ function bienvenida() {
 }
 
 // ---------- inicio ----------
+/** Camino punteado con una chincheta por sesión del día: `hechas` rojas, la siguiente da un bote, y meta verde si está todo. */
+const CORTO = { pais: "Países", bandera: "Banderas", fisico: "Física", espana: "España", estado: "Estados EE. UU.", ciudad: "Ciudades" };
+function caminoSVG(hechas, total, alDia, etiqueta) {
+  const n = Math.max(total, 1), W = 320, x0 = 18, x1 = alDia || !total ? W - 34 : W - 18;
+  const pts = Array.from({ length: n }, (_, i) => [n === 1 ? x0 : x0 + (i * (x1 - x0)) / (n - 1), i % 2 ? 26 : 44]);
+  if (alDia || !total) pts.push([W - 10, 30]);
+  let d = `M${pts[0][0]} ${pts[0][1]}`;
+  for (let i = 1; i < pts.length; i++) { const [ax, ay] = pts[i - 1], [bx, by] = pts[i], mx = (ax + bx) / 2; d += ` C${mx} ${ay} ${mx} ${by} ${bx} ${by}`; }
+  const pin = (x, y, cl) => `<g class="${cl.includes("siguiente") ? "siguiente" : ""}"><path class="${cl.replace("siguiente", "").trim()}" d="M${x} ${y} c-2-5-9-8.5-9-15.5a9 9 0 1 1 18 0c0 7-7 10.5-9 15.5z"/><circle cx="${x}" cy="${y - 15.5}" r="3.4"/></g>`;
+  const pines = total ? pts.slice(0, n).map(([x, y], i) => pin(x, y, i < hechas ? "hecha" : i === hechas ? "falta siguiente" : "falta")).join("") : "";
+  const meta = alDia || !total ? (() => { const [x, y] = pts[pts.length - 1]; return `<path d="M${x} ${y} v-26" stroke="currentColor" stroke-width="2"/><path class="meta" d="M${x} ${y - 26} h14 l-4 6 4 6 h-14z"/>`; })() : "";
+  return `<svg class="camino" viewBox="0 -4 ${W} 58" role="img" aria-label="${total ? etiqueta : "Nada pendiente hoy"}"><path class="traza" d="${d}"/>${pines}${meta}</svg>`;
+}
 function inicio() {
   const e = app.estadisticas(), hoy = app.hoy(), ses = app.sesion(), pend = app.preguntaPendiente();
   const hechaHoy = ses && !pend && ses.fecha === hoy;
@@ -86,45 +100,54 @@ function inicio() {
   const tope = app.config?.max_aprendiendo ?? 0, aprendiendo = tope ? app.srs.enAprendizajeTotal(app.estado() ?? { items: {} }, app.tipos) : 0;
   // Sesiones aproximadas: con los nuevos en pausa, las 10 preguntas son repasos; si no, unos 8 por sesión
   const porSesion = tope && aprendiendo >= tope ? C.SESION_N : C.SESION_N - 2, sesNec = Math.ceil(debidos / porSesion);
-  const plan = `<p class="plan">${hechasHoy ? `<span>Hoy llevas <b>${hechasHoy}</b> sesi${hechasHoy === 1 ? "ón" : "ones"}</span>` : ""}${debidos
-      ? `<span>Te ${debidos === 1 ? "toca <b>1 repaso</b>" : `tocan <b>${debidos} repasos</b>`} · ${sesNec === 1 ? "1 sesión" : `unas ${sesNec} sesiones`}</span>`
-      : `<span>✅ Repasos de hoy al día${hechasHoy ? "" : ""}</span>`}<span class="suave">Mañana: ${manana}</span>${tope ? `<span class="suave">${aprendiendo >= tope ? `Nuevos en pausa: ${aprendiendo} a medio aprender (tope ${tope})` : `A medio aprender: ${aprendiendo} de ${tope}`}</span>` : ""}</p>`;
+  // La ruta de hoy: una chincheta por sesión (hechas en rojo, pendientes en blanco) y bandera de meta al final
+  const totRuta = hechasHoy + sesNec, nRuta = Math.min(8, totRuta); // con más de 8 sesiones, las chinchetas son proporcionales
+  const hechasRuta = totRuta > 8 ? Math.min(7, Math.round((hechasHoy * 8) / totRuta)) : hechasHoy;
+  const ruta = caminoSVG(hechasRuta, nRuta, !debidos && hechasHoy > 0, `${hechasHoy} de unas ${totRuta} sesiones hechas hoy`);
+  const plan = `<p class="plan">${hechasHoy ? `<span>Hoy llevas <b>${hechasHoy}</b> sesi${hechasHoy === 1 ? "ón" : "ones"}</span>` : ""}${debidos ? `<span>${sesNec === 1 ? "Queda <b>1 sesión</b>" : `Quedan unas <b>${sesNec} sesiones</b>`}</span>` : ""}<span>Mañana: <b>${manana}</b></span>${tope ? `<span>${aprendiendo >= tope ? `Nuevos en pausa (${aprendiendo}/${tope} a medio aprender)` : `A medio aprender: <b>${aprendiendo}</b>/${tope}`}</span>` : ""}</p>`;
+  const titular = debidos
+    ? `<p class="cifra-grande"><b>${debidos}</b><span>${debidos === 1 ? "repaso" : "repasos"}<br>para hoy</span></p>`
+    : `<p class="titular">${hechasHoy ? "Repasos al día" : "Sin repasos hoy"}</p>`;
   let estadoDia;
-  if (pend) estadoDia = `<p>Tienes la sesión <b>${esc(ses.sesion)}</b> a medias: vas por la <b>${pend.n}/${ses.preguntas.length}</b>.</p><button class="btn prim" id="empezar">Continuar sesión</button>`;
-  else if (hechaHoy) estadoDia = `<p>${debidos ? "Aún te quedan repasos de hoy." : "Has hecho los repasos de hoy. Otra sesión te trae países nuevos y práctica."}</p><button class="btn ${debidos ? "prim" : ""}" id="empezar">Otra sesión de ${C.SESION_N}</button>`;
-  else if (horaMadrid() >= 7) estadoDia = `<p>Tu sesión de hoy está lista: ${C.SESION_N} preguntas${e.repasos_pendientes_hoy ? `, con repasos pendientes primero` : ""}.</p><button class="btn prim" id="empezar">Empezar sesión</button>`;
-  else estadoDia = `<p>La sesión de hoy estará lista a las 07:00. Si quieres, puedes empezarla ya.</p><button class="btn prim" id="empezar">Empezar ahora</button>`;
+  if (pend) estadoDia = `<p class="estado">Tienes la sesión <b>${esc(ses.sesion)}</b> a medias: vas por la <b>${pend.n}/${ses.preguntas.length}</b>.</p><button class="btn prim" id="empezar">Continuar sesión</button>`;
+  else if (hechaHoy) estadoDia = `${debidos ? "" : `<p class="estado">Otra sesión te trae sitios nuevos y práctica.</p>`}<button class="btn ${debidos ? "prim" : ""}" id="empezar">${debidos ? "Siguiente sesión" : `Otra sesión de ${C.SESION_N}`}</button>`;
+  else if (horaMadrid() >= 7) estadoDia = `<button class="btn prim" id="empezar">Empezar sesión</button>`;
+  else estadoDia = `<p class="estado">La sesión de hoy se abre a las 07:00, pero puedes empezarla ya.</p><button class="btn prim" id="empezar">Empezar ahora</button>`;
   const ult = app.datos.meta?.ultima_exportacion, diasSinCopia = ult ? difDias(hoy, ult.slice(0, 10)) : null;
   const avisoCopia = diasSinCopia === null || diasSinCopia >= 7
-    ? `<div class="banda">💾 Tu progreso solo vive en este navegador. ${ult ? `Tu última copia es de hace ${diasSinCopia} días.` : "Aún no has descargado ninguna copia."} <a href="#" data-ir="progreso">Descargar copia</a></div>` : "";
+    ? `<div class="banda">Tu progreso solo vive en este navegador. ${ult ? `Tu última copia es de hace ${diasSinCopia} días.` : "Aún no has descargado ninguna copia."} <a href="#" data-ir="progreso">Descargar copia</a></div>` : "";
   const avisoPersist = persistente === false ? `<div class="banda">El navegador no garantiza conservar los datos. Instala la app en la pantalla de inicio y descarga copias a menudo.</div>` : "";
-  const beta = app.config?.modo === "beta" ? `<div class="banda beta">🧪 <b>${esc(app.config.nombre)}</b>: de momento solo salen países y capitales. Tu progreso del resto se guarda para cuando lleguen.</div>` : "";
-  const sinImg = !imagenes ? `<div class="banda">🖼️ Aún no hay imágenes cargadas: las preguntas mostrarán «imagen no disponible».</div>` : "";
+  const beta = app.config?.modo === "beta" ? `<div class="banda beta"><b>${esc(app.config.nombre)}</b>: de momento solo salen países y capitales. Tu progreso del resto se guarda para cuando lleguen.</div>` : "";
+  const sinImg = !imagenes ? `<div class="banda">Aún no hay imágenes cargadas: las preguntas mostrarán «imagen no disponible».</div>` : "";
   const { racha, medallas: med } = app.medallas(), gan = app.ganadas();
   const proxR = MEDALLAS.find((m) => m.tipo === "racha" && m.n > racha.actual);
   const nGan = MEDALLAS.filter((m) => !med[m.id].oculta && (gan[m.id] || med[m.id].nivel)).length, nTot = MEDALLAS.filter((m) => !med[m.id].oculta).length;
-  const bloqueRacha = `<button class="tarjeta racha pulsable" data-ir="medallas">
-      <div class="llama ${racha.hoyHecho ? "" : "apagada"}">🔥<b>${racha.actual}</b></div>
-      <div class="izq"><p><b>${racha.actual ? `Racha de ${racha.actual} día${racha.actual === 1 ? "" : "s"}` : "Empieza una racha hoy"}</b>${racha.hoyHecho ? " ✓" : ""}</p>
-      <p class="suave">${racha.hoyHecho ? "Hoy ya cuenta." : racha.actual ? "Contesta al menos una pregunta hoy para no perderla." : "Cada día que uses la app suma."}${proxR ? ` Próxima medalla: ${proxR.n} días.` : ""}</p>
-      <p class="suave">🏅 ${nGan} de ${nTot} medallas · ver vitrina ›</p></div></button>`;
+  const chips = `<div class="chips">
+      <button class="chip fuego ${racha.hoyHecho ? "" : "apagada"}" data-ir="medallas"><span class="ico">🔥</span><span><b>${racha.actual} día${racha.actual === 1 ? "" : "s"}</b><small>${racha.hoyHecho ? "de racha · hoy ✓" : racha.actual ? "juega hoy para no perderla" : "empieza una racha hoy"}</small></span></button>
+      <button class="chip" data-ir="medallas"><span class="ico">🏅</span><span><b>${nGan}<small style="display:inline;font-size:15px"> / ${nTot}</small></b><small>medallas ganadas</small></span></button>
+    </div>`;
+  const filas = Object.entries(e.por_tipo).map(([T, v]) => {
+    const pc = (x) => (100 * Math.max(0, x) / v.total).toFixed(1) + "%", co = Math.max(v.consolidados, v.aprendidos);
+    return `<li style="--c:var(--t-${T})"><span>${CORTO[T] ?? esc(NOMBRE_TIPO[T])}</span><span class="pista" role="img" aria-label="${v.aprendidos} aprendidos, ${v.consolidados} consolidados y ${v.vistos} vistos de ${v.total}"><i style="width:${pc(v.aprendidos)}"></i><i class="c" style="width:${pc(co - v.aprendidos)}"></i><i class="v" style="width:${pc(v.vistos - co)}"></i></span><span class="n"><b>${v.aprendidos}</b> / ${v.total}</span></li>`;
+  }).join("");
   vista.innerHTML = `
-    <h1>${esc(fechaLarga(hoy).replace(/^./, (c) => c.toUpperCase()))}</h1>
     ${beta}${avisoCopia}${avisoPersist}${sinImg}
-    <div class="tarjeta">${plan}${estadoDia}</div>
-    ${bloqueRacha}
-    <div class="cifras">
-      <div class="cifra"><b>${e.repasos_pendientes_hoy}</b><span>repasos hoy</span></div>
-      <div class="cifra"><b>${racha.max}</b><span>récord de racha</span></div>
-      <div class="cifra"><b>${e.acierto_7_dias ?? "–"}${e.acierto_7_dias != null ? "%" : ""}</b><span>acierto 7 días</span></div>
-    </div>
-    <div class="tarjeta">
-      <p><b>${e.vistos}</b> de ${e.total} vistos · <b>${e.consolidados}</b> consolidados · <b>${e.aprendidos}</b> aprendidos</p>
-      <div class="barra-prog"><i style="width:${(100 * e.vistos / e.total).toFixed(1)}%"></i></div>
-      <button class="btn" data-ir="estadisticas">Ver estadísticas</button>
-    </div>
+    <section class="tarjeta ruta">
+      <p class="fecha">${esc(fechaLarga(hoy).replace(/^./, (c) => c.toUpperCase()))}</p>
+      ${titular}
+      ${ruta}
+      ${plan}
+      ${estadoDia}
+    </section>
+    ${chips}
+    <section class="tarjeta atlas">
+      <h2>Tu atlas</h2>
+      <ul class="tipos">${filas}</ul>
+      <p class="leyenda"><span><i></i>Aprendidos ${e.aprendidos}</span><span><i class="c"></i>Consolidados ${e.consolidados}</span><span><i class="v"></i>Vistos ${e.vistos}</span><span>Acierto 7 días: <b>${e.acierto_7_dias ?? "–"}${e.acierto_7_dias != null ? "%" : ""}</b></span></p>
+      <div class="enlaces"><button class="btn" data-ir="estadisticas">Estadísticas</button><button class="btn" data-ir="medallas">Medallas</button></div>
+    </section>
     ${pend ? `<button class="btn peligro" id="abandonar">Descartar la sesión a medias</button>` : ""}
-    <p class="suave">Versión ${APP_VERSION} · funciona sin conexión.</p>`;
+    <p class="pie">Versión ${APP_VERSION} · funciona sin conexión</p>`;
   $("#empezar").onclick = empezar;
 
   app.verMedallas().then(celebrar);
@@ -159,13 +182,13 @@ function pregunta() {
   if (!q) return ir("hoja");
   const it = app.P.get(q.id), tot = ses.preguntas.length;
   vista.innerHTML = `
-    <div class="cabeza"><span class="num">${q.n}/${tot}</span><span class="etiqueta">${esc(NOMBRE_TIPO[it.tipo])}${q.modo === "repaso" ? " · repaso" : ""}</span></div>
+    <div class="cabeza"><span class="num">${q.n}/${tot}</span><span class="etiqueta" style="--c:var(--t-${it.tipo})">${esc(NOMBRE_TIPO[it.tipo])}${q.modo === "repaso" ? " · repaso" : ""}</span></div>
     ${puntos(ses, q.n)}
     <p class="pregunta">${esc(textoCorto(it))}</p>
     ${imgsHTML(it)}
     <form class="respuesta" id="f" autocomplete="off">
       <input id="r" type="text" enterkeyhint="send" autocomplete="off" autocorrect="off" autocapitalize="sentences" spellcheck="false"
-        placeholder="${it.tipo === "pais" ? "País y capital: «Kenia, Nairobi»" : it.tipo === "estado" ? "Nombre del estado" : "Tu respuesta"}" aria-label="Tu respuesta">
+        placeholder="${it.tipo === "pais" ? "País, capital" : it.tipo === "estado" ? "Nombre del estado" : "Tu respuesta"}" aria-label="Tu respuesta">
       <button class="btn prim" type="submit">${q.n < tot ? "Siguiente" : "Terminar y corregir"}</button>
     </form>
     <button class="btn" id="nose">No lo sé</button>
@@ -222,7 +245,7 @@ function correccion(n, revision = false) {
   const ses = app.sesion(), q = ses.preguntas.find((x) => x.n === n), it = app.P.get(q.id), tot = ses.preguntas.length;
   const quedan = ses.preguntas.some((x) => !x.corregida);
   vista.innerHTML = `
-    <div class="cabeza"><span class="num">${n}/${tot}</span><span class="etiqueta">${esc(NOMBRE_TIPO[it.tipo])}</span></div>
+    <div class="cabeza"><span class="num">${n}/${tot}</span><span class="etiqueta" style="--c:var(--t-${it.tipo})">${esc(NOMBRE_TIPO[it.tipo])}</span></div>
     ${puntos(ses, n)}
     ${bloqueCorreccion(n)}
     <button class="btn prim" id="sig">${revision ? (n < tot ? `Siguiente corrección (${n + 1}/${tot})` : "Ver resumen") : quedan ? "Siguiente" : "Ver resumen"}</button>`;
@@ -245,7 +268,7 @@ function hoja(irA = null) {
     ${ses.preguntas.map((q) => {
       const it = app.P.get(q.id);
       return `<section class="preg tarjeta" id="p${q.n}" data-n="${q.n}">
-        <div class="cabeza"><span class="num">${q.n}/${tot}</span><span class="etiqueta">${esc(NOMBRE_TIPO[it.tipo])}${q.modo === "repaso" ? " · repaso" : ""}</span></div>
+        <div class="cabeza"><span class="num">${q.n}/${tot}</span><span class="etiqueta" style="--c:var(--t-${it.tipo})">${esc(NOMBRE_TIPO[it.tipo])}${q.modo === "repaso" ? " · repaso" : ""}</span></div>
         ${q.corregida ? "" : `<p class="pregunta corta">${esc(textoCorto(it))}</p>${imgsHTML(it)}`}
         ${q.corregida ? bloqueCorreccion(q.n) : `<input class="caja" id="r${q.n}" data-n="${q.n}" type="text" enterkeyhint="next" autocomplete="off" autocorrect="off" spellcheck="false" placeholder="${it.tipo === "pais" ? "País y capital" : it.tipo === "estado" ? "Nombre del estado" : "Tu respuesta"}" value="${esc(bor[q.n] ?? "")}">`}
       </section>`;
@@ -352,6 +375,7 @@ async function progreso() {
       <p>• Mar de Scotia y mar Cantábrico: <b>SeaVoX v19</b> (BODC/Marine Regions, CC BY 4.0, doi:10.14284/590); límite del Cantábrico según la división <b>ICES 8.c</b> (CC BY 4.0).</p>
       <p>• Ciudades de España: coordenadas de OpenStreetMap/Wikidata.</p>
       <p>• Banderas: imágenes de flagcdn/Flagpedia. ${esc(app.items.filter((i) => i.atribucion).map((i) => i.atribucion).join(" "))}</p>
+      <p>• Tipografía de titulares: <b>Inter Display</b>, © The Inter Project Authors, SIL Open Font License 1.1 (fonts/OFL.txt).</p>
       <p>• Curiosidades: escritas a mano en el proyecto; las de las ciudades del mundo, contrastadas con Wikipedia.</p>
     </details>
     <details class="tarjeta"><summary>Importante sobre tus datos</summary>
