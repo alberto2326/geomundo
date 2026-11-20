@@ -33,7 +33,7 @@ for k, it in enumerate(ld("datos_estados50.json")):
     c = caps(it["capitales"])
     for x in c:
         x["alias"] = x["alias"] + [a for a in EXTRA_ALIAS_CAP.get(it["id"], []) if a not in x["alias"]]
-    # Decisión de Alberto (14-11-2026): de los estados solo se pregunta el nombre; la capital se muestra al corregir, como dato.
+    # Decisión de diseño (14-11-2026): de los estados solo se pregunta el nombre; la capital se muestra al corregir, como dato.
     items[it["id"]] = dict(id=it["id"], tipo="estado", subtipo="estado", nombre=it["estado"], alias=it["alias_estado"], nivel=1, extra=False,
                           orden=[k], dato=it.get("curiosidad", ""), pregunta="¿Qué ESTADO de EE. UU. está resaltado en el mapa (en rojo o señalado con la flecha)?",
                           titulo="¿Qué ESTADO es?", imagenes="cercana+contexto", postal=it.get("postal"), capital_ref=[x["nombre"] for x in c])
