@@ -23,7 +23,7 @@ for (let d = 0; d < 90; d++) {
     if (!sesion) { M.sinSesion++; break; }
     M.sesiones++;
     const qs = sesion.preguntas;
-    if (qs.length !== 10) fallo("tamaño", `${hoy} ${qs.length}`);
+    if (qs.length !== app.preguntasSesion()) fallo("tamaño", `${hoy} ${qs.length}`);
     if (new Set(qs.map((q) => q.id)).size !== qs.length) fallo("duplicado en sesión", hoy);
     for (let j = 0; j + 1 < qs.length; j++) if (qs[j].tipo === qs[j + 1].tipo) M.tiposSeguidos++;
     const nuevos = qs.filter((q) => q.modo === "nuevo").length;

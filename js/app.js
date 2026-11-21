@@ -1,5 +1,5 @@
 // Interfaz. Toda la lógica está en logica.js / srs.js / comparar.js.
-import { crearApp, APP_VERSION } from "./logica.js";
+import { crearApp, APP_VERSION, NOVEDADES_VERSION, DIFICULTADES, VIDAS } from "./logica.js";
 import { abrirIndexedDB } from "./almacen.js";
 import { NOMBRE_TIPO, C } from "./srs.js";
 import { horaMadrid, difDias, sumarDias } from "./util.js";
@@ -12,7 +12,8 @@ const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "
 const fechaCorta = (iso, hoy) => { const d = difDias(iso, hoy); return d === 0 ? "hoy" : d === 1 ? "mañana" : new Date(iso + "T12:00:00Z").toLocaleDateString("es-ES", { weekday: "short", day: "numeric", month: "short", timeZone: "UTC" }); };
 const fechaLarga = (iso) => new Date(iso + "T12:00:00Z").toLocaleDateString("es-ES", { weekday: "long", day: "numeric", month: "long", timeZone: "UTC" });
 const MODO = { nuevo: "nuevo", repaso: "repaso", practica: "práctica extra" };
-let app, imagenes = null, persistente = null, ultimaRetro = null;
+const NOMBRE_CAT = { pais: "Países y capitales", bandera: "Banderas", fisico: "Geografía física", espana: "España", estado: "Estados de EE. UU.", ciudad: "Ciudades del mundo" };
+let app, imagenes = null, persistente = null, ultimaRetro = null, partida = null;
 
 
 // ---------- arranque ----------
@@ -36,6 +37,41 @@ async function iniciar() {
   document.addEventListener("click", (e) => { const b = e.target.closest("[data-ir]"); if (b) { e.preventDefault(); ir(b.dataset.ir); } });
   $("#zoom").addEventListener("click", () => ($("#zoom").hidden = true));
   ir(app.tieneProgreso() ? "inicio" : "bienvenida");
+  ventanaInicial();
+}
+/** Bienvenida para quien empieza de cero; «Novedades» (una vez) para quien ya usaba la app. */
+function ventanaInicial() {
+  const pr = app.datos.prefs ?? {};
+  if (!app.tieneProgreso()) return;
+  if (pr.bienvenida_pendiente) {
+    ventana(`<h2>¡Bienvenido! 🌍</h2>
+      <p class="sub-ventana">Dos formas de jugar:</p>
+      <ul class="lista-ventana">
+        <li><span>🗺️</span><b>Sesión del día.</b> 5 preguntas con mapa. Lo que fallas vuelve pronto; lo que aciertas, cada vez más tarde. Así se te queda para siempre.</li>
+        <li><span>🎮</span><b>Modo desafío.</b> 3 vidas, preguntas sin parar. ¿Hasta dónde llegas?</li>
+        <li><span>🏅</span><b>Medallas y rachas</b> por jugar cada día.</li>
+        <li><span>⚙️</span><b>Tú eliges</b> qué aprender, en Ajustes.</li>
+      </ul>`,
+      [["¡Vamos!", true, () => app.guardarPrefs({ bienvenida_pendiente: false })], ["Ver ajustes", false, async () => { await app.guardarPrefs({ bienvenida_pendiente: false }); ir("ajustes"); }]]);
+  } else if (pr.novedades_vistas !== NOVEDADES_VERSION) {
+    const fin = () => app.guardarPrefs({ novedades_vistas: NOVEDADES_VERSION });
+    ventana(`<h2>Novedades 🎉</h2>
+      <ul class="lista-ventana">
+        <li><span>🎮</span><b>Nuevo: Modo desafío.</b> 3 vidas y a por el récord. No toca tus repasos.</li>
+        <li><span>⏱️</span><b>Sesiones de 5.</b> Más rápidas. ¿Prefieres 10? En Ajustes.</li>
+        <li><span>✅</span><b>Corrección al momento.</b> O todas al final, como prefieras.</li>
+        <li><span>🎯</span><b>Tú eliges qué aprender.</b> Pausa categorías sin perder nada.</li>
+      </ul>`,
+      [["¡Genial!", true, fin], ["Ver ajustes", false, async () => { await fin(); ir("ajustes"); }]]);
+  }
+}
+/** Ventana emergente sencilla. botones: [[texto, principal, acción]] */
+function ventana(html, botones) {
+  const v = document.createElement("div"); v.className = "modal"; v.setAttribute("role", "dialog"); v.setAttribute("aria-modal", "true");
+  v.innerHTML = `<div class="caja">${html}<div class="acciones">${botones.map(([t, p], i) => `<button class="btn ${p ? "prim" : ""}" data-b="${i}">${esc(t)}</button>`).join("")}</div></div>`;
+  document.body.append(v);
+  v.querySelectorAll("[data-b]").forEach((b) => (b.onclick = async () => { v.remove(); await botones[Number(b.dataset.b)][2]?.(); }));
+  v.querySelector(".btn.prim")?.focus();
 }
 function registrarSW() {
   navigator.serviceWorker.register("sw.js").then((reg) => {
@@ -56,7 +92,7 @@ function avisar(texto, boton, accion, ms = 0) {
 }
 function ir(pantalla, ...args) {
   if (!app.tieneProgreso() && !["bienvenida", "progreso"].includes(pantalla)) pantalla = "bienvenida";
-  ({ inicio, bienvenida, pregunta, correccion, hoja, resumen, estadisticas, progreso, medallas: () => pantallaMedallas(app, vista) })[pantalla](...args);
+  ({ inicio, bienvenida, pregunta, correccion, hoja, resumen, estadisticas, progreso, ajustes, desafio, juego, finJuego, medallas: () => pantallaMedallas(app, vista) })[pantalla](...args);
   document.querySelectorAll(".barra nav button").forEach((b) => (b.dataset.ir === pantalla ? b.setAttribute("aria-current", "page") : b.removeAttribute("aria-current")));
   window.scrollTo(0, 0); vista.focus({ preventScroll: true });
 }
@@ -64,12 +100,13 @@ function ir(pantalla, ...args) {
 // ---------- bienvenida (sin progreso) ----------
 function bienvenida() {
   vista.innerHTML = `
-    <h1>Bienvenido</h1>
-    <p>Esta app guarda tu progreso <b>solo en este navegador</b>. Para seguir donde lo dejaste, carga tu progreso: el <code>state.json</code> del sistema anterior o una copia descargada desde la app.</p>
-    <button class="btn prim" data-ir="progreso">Cargar mi progreso</button>
-    <button class="btn" id="cero">Empezar de cero</button>
-    <p class="suave">Empezar de cero no borra nada que tengas en otro sitio, pero aquí empezarías sin historial.</p>`;
-  $("#cero").onclick = async () => { if (confirm("¿Empezar sin progreso previo? Lo podrás sustituir más tarde cargando una copia.")) { await app.empezarDeCero(); ir("inicio"); } };
+    <section class="tarjeta ruta">
+      <p class="titular">Aprende el mundo, cinco preguntas al día</p>
+      <p class="estado">Países, capitales, banderas, ríos, montañas, España, Estados Unidos y grandes ciudades. Con mapas, repetición espaciada y medallas.</p>
+      <button class="btn prim" id="cero">Empezar</button>
+    </section>
+    <p class="suave">¿Ya la usabas en otro móvil? <a href="#" data-ir="progreso">Carga tu copia de progreso</a>.</p>`;
+  $("#cero").onclick = async () => { await app.empezarDeCero(); ir("inicio"); ventanaInicial(); };
 }
 
 // ---------- inicio ----------
@@ -97,9 +134,9 @@ function inicio() {
     if ((r.vence ?? "9999") <= hoy) debidos++; else if (r.vence === man) manana++;
   }
   const hechasHoy = (app.datos.logros?.sesiones ?? []).filter((x) => x.fecha === hoy).length;
-  const tope = app.config?.max_aprendiendo ?? 0, aprendiendo = tope ? app.srs.enAprendizajeTotal(app.estado() ?? { items: {} }, app.tipos) : 0;
+  const N = app.preguntasSesion(), tope = app.tope(), aprendiendo = tope ? app.srs.enAprendizajeTotal(app.estado() ?? { items: {} }, app.tipos) : 0;
   // Sesiones aproximadas: con los nuevos en pausa, las 10 preguntas son repasos; si no, unos 8 por sesión
-  const porSesion = tope && aprendiendo >= tope ? C.SESION_N : C.SESION_N - 2, sesNec = Math.ceil(debidos / porSesion);
+  const porSesion = tope && aprendiendo >= tope ? N : Math.max(1, Math.round(N * 0.8)), sesNec = Math.ceil(debidos / porSesion);
   // La ruta de hoy: una chincheta por sesión (hechas en rojo, pendientes en blanco) y bandera de meta al final
   const totRuta = hechasHoy + sesNec, nRuta = Math.min(8, totRuta); // con más de 8 sesiones, las chinchetas son proporcionales
   const hechasRuta = totRuta > 8 ? Math.min(7, Math.round((hechasHoy * 8) / totRuta)) : hechasHoy;
@@ -110,7 +147,7 @@ function inicio() {
     : `<p class="titular">${hechasHoy ? "Repasos al día" : "Sin repasos hoy"}</p>`;
   let estadoDia;
   if (pend) estadoDia = `<p class="estado">Tienes la sesión <b>${esc(ses.sesion)}</b> a medias: vas por la <b>${pend.n}/${ses.preguntas.length}</b>.</p><button class="btn prim" id="empezar">Continuar sesión</button>`;
-  else if (hechaHoy) estadoDia = `${debidos ? "" : `<p class="estado">Otra sesión te trae sitios nuevos y práctica.</p>`}<button class="btn ${debidos ? "prim" : ""}" id="empezar">${debidos ? "Siguiente sesión" : `Otra sesión de ${C.SESION_N}`}</button>`;
+  else if (hechaHoy) estadoDia = `${debidos ? "" : `<p class="estado">Otra sesión te trae sitios nuevos y práctica.</p>`}<button class="btn ${debidos ? "prim" : ""}" id="empezar">${debidos ? "Siguiente sesión" : `Otra sesión de ${N}`}</button>`;
   else if (horaMadrid() >= 7) estadoDia = `<button class="btn prim" id="empezar">Empezar sesión</button>`;
   else estadoDia = `<p class="estado">La sesión de hoy se abre a las 07:00, pero puedes empezarla ya.</p><button class="btn prim" id="empezar">Empezar ahora</button>`;
   const ult = app.datos.meta?.ultima_exportacion, diasSinCopia = ult ? difDias(hoy, ult.slice(0, 10)) : null;
@@ -126,9 +163,10 @@ function inicio() {
       <button class="chip fuego ${racha.hoyHecho ? "" : "apagada"}" data-ir="medallas"><span class="ico">🔥</span><span><b>${racha.actual} día${racha.actual === 1 ? "" : "s"}</b><small>${racha.hoyHecho ? "de racha · hoy ✓" : racha.actual ? "juega hoy para no perderla" : "empieza una racha hoy"}</small></span></button>
       <button class="chip" data-ir="medallas"><span class="ico">🏅</span><span><b>${nGan}<small style="display:inline;font-size:15px"> / ${nTot}</small></b><small>medallas ganadas</small></span></button>
     </div>`;
-  const filas = Object.entries(e.por_tipo).map(([T, v]) => {
+  const todas = app.estadisticasTodas(), activos = app.tipos;
+  const filas = Object.entries(todas.por_tipo).map(([T, v]) => {
     const pc = (x) => (100 * Math.max(0, x) / v.total).toFixed(1) + "%", co = Math.max(v.consolidados, v.aprendidos);
-    return `<li style="--c:var(--t-${T})"><span>${CORTO[T] ?? esc(NOMBRE_TIPO[T])}</span><span class="pista" role="img" aria-label="${v.aprendidos} aprendidos, ${v.consolidados} consolidados y ${v.vistos} vistos de ${v.total}"><i style="width:${pc(v.aprendidos)}"></i><i class="c" style="width:${pc(co - v.aprendidos)}"></i><i class="v" style="width:${pc(v.vistos - co)}"></i></span><span class="n"><b>${v.aprendidos}</b> / ${v.total}</span></li>`;
+    return `<li style="--c:var(--t-${T})" class="${activos.includes(T) ? "" : "pausa"}"><span>${CORTO[T] ?? esc(NOMBRE_TIPO[T])}${activos.includes(T) ? "" : "<small>en pausa</small>"}</span><span class="pista" role="img" aria-label="${v.aprendidos} aprendidos, ${v.consolidados} consolidados y ${v.vistos} vistos de ${v.total}"><i style="width:${pc(v.aprendidos)}"></i><i class="c" style="width:${pc(co - v.aprendidos)}"></i><i class="v" style="width:${pc(v.vistos - co)}"></i></span><span class="n"><b>${v.aprendidos}</b> / ${v.total}</span></li>`;
   }).join("");
   vista.innerHTML = `
     ${beta}${avisoCopia}${avisoPersist}${sinImg}
@@ -140,11 +178,12 @@ function inicio() {
       ${estadoDia}
     </section>
     ${chips}
+    ${tarjetaDesafio()}
     <section class="tarjeta atlas">
       <h2>Tu atlas</h2>
       <ul class="tipos">${filas}</ul>
       <p class="leyenda"><span><i></i>Aprendidos ${e.aprendidos}</span><span><i class="c"></i>Consolidados ${e.consolidados}</span><span><i class="v"></i>Vistos ${e.vistos}</span><span>Acierto 7 días: <b>${e.acierto_7_dias ?? "–"}${e.acierto_7_dias != null ? "%" : ""}</b></span></p>
-      <div class="enlaces"><button class="btn" data-ir="estadisticas">Estadísticas</button><button class="btn" data-ir="medallas">Medallas</button></div>
+      <div class="enlaces"><button class="btn" data-ir="ajustes">Elegir categorías</button><button class="btn" data-ir="estadisticas">Estadísticas</button></div>
     </section>
     ${pend ? `<button class="btn peligro" id="abandonar">Descartar la sesión a medias</button>` : ""}
     <p class="pie">Creada por Alberto Peñalba<br>Versión ${APP_VERSION} · funciona sin conexión</p>`;
@@ -157,7 +196,7 @@ function inicio() {
 }
 async function empezar() {
   const r = await app.sesionActual();
-  if (!r.sesion) { avisar("Por ahora no hay preguntas suficientes para otra sesión completa: el ritmo de nuevas está frenado. ¡Por hoy has terminado!", null, null, 6000); return; }
+  if (!r.sesion) { avisar("Por hoy has terminado: no quedan repasos y los sitios nuevos están en pausa hasta que se asienten los que tienes a medias. ¡Vuelve mañana!", null, null, 7000); return; }
   ir("pregunta");
 }
 
@@ -180,7 +219,7 @@ function puntos(ses, actual) { return `<div class="puntos">${ses.preguntas.map((
 function pregunta() {
   const ses = app.sesion(), q = app.preguntaPendiente();
   if (!q) return ir("hoja");
-  const it = app.P.get(q.id), tot = ses.preguntas.length;
+  const it = app.P.get(q.id), tot = ses.preguntas.length, cada = app.corregirCada();
   vista.innerHTML = `
     <div class="cabeza"><span class="num">${q.n}/${tot}</span><span class="etiqueta" style="--c:var(--t-${it.tipo})">${esc(NOMBRE_TIPO[it.tipo])}${q.modo === "repaso" ? " · repaso" : ""}</span></div>
     ${puntos(ses, q.n)}
@@ -189,16 +228,16 @@ function pregunta() {
     <form class="respuesta" id="f" autocomplete="off">
       <input id="r" type="text" enterkeyhint="send" autocomplete="off" autocorrect="off" autocapitalize="sentences" spellcheck="false"
         placeholder="${it.tipo === "pais" ? "País, capital" : it.tipo === "estado" ? "Nombre del estado" : "Tu respuesta"}" aria-label="Tu respuesta">
-      <button class="btn prim" type="submit">${q.n < tot ? "Siguiente" : "Terminar y corregir"}</button>
+      <button class="btn prim" type="submit">${cada ? "Comprobar" : q.n < tot ? "Siguiente" : "Terminar y corregir"}</button>
     </form>
     <button class="btn" id="nose">No lo sé</button>
-    <p class="suave">Las correcciones salen al final, cuando respondas las ${tot}.</p>`;
+    ${cada ? "" : `<p class="suave">Las correcciones salen al final, cuando respondas las ${tot}.</p>`}`;
   zoomImgs();
   let enviando = false;
   const enviar = async (txt) => {
     if (enviando) return; enviando = true;
     vista.querySelectorAll("button").forEach((b) => (b.disabled = true));
-    try { await app.responder(q.n, txt); ultimaRetro = null; ir("pregunta"); }
+    try { const r = await app.responder(q.n, txt); if (cada) { ultimaRetro = r; ir("correccion", q.n); } else { ultimaRetro = null; ir("pregunta"); } }
     catch (e) { enviando = false; avisar("No se pudo guardar la respuesta: " + e.message, null, null, 8000); vista.querySelectorAll("button").forEach((b) => (b.disabled = false)); }
   };
   $("#f").onsubmit = (e) => { e.preventDefault(); const v = $("#r").value.trim(); if (!v) { $("#r").focus(); return; } enviar(v); };
@@ -228,7 +267,7 @@ function bloqueCorreccion(n) {
     ${it.dato ? `<div class="dato">💡 ${esc(it.dato)}</div>` : ""}
     ${imgsHTML(it, true)}
     <p class="suave">Próximo repaso: ${esc(fechaLarga(q.proxima_revision))} (${r.dias === 1 ? "mañana" : `en ${r.dias} días`}).</p>
-    ${!ok ? `<details><summary>El dictado se equivocó / quiero reevaluar</summary>
+    ${!ok ? `<details><summary>Me equivoqué al escribir: reevaluar</summary>
       <form class="respuesta reeval" data-n="${n}"><input type="text" autocomplete="off" autocorrect="off" spellcheck="false" placeholder="Lo que querías decir"><button class="btn" type="submit">Reevaluar</button></form>
       <p class="suave">Se deshace la corrección anterior y se puntúa la nueva. Solo cuenta como acierto si la nueva respuesta es correcta.</p></details>` : ""}`;
 }
@@ -252,6 +291,7 @@ function correccion(n, revision = false) {
   zoomImgs();
   $("#sig").onclick = () => (revision ? (n < tot ? ir("correccion", n + 1, true) : ir("resumen")) : ir(quedan ? "pregunta" : "resumen"));
   activarReevaluar((m) => ir("correccion", m, revision));
+  if (!quedan) app.verMedallas().then(celebrar);
 }
 
 // ---------- hoja: las 10 preguntas en una pantalla, dictado seguido ----------
@@ -330,6 +370,122 @@ function resumen() {
 }
 
 // ---------- estadísticas ----------
+// ---------- modo desafío ----------
+const corazones = (n) => "❤️".repeat(Math.max(0, n)) + "🤍".repeat(Math.max(0, VIDAS - n));
+function tarjetaDesafio() {
+  const rec = app.records(), mejor = Object.entries(DIFICULTADES).filter(([k]) => rec[k]).map(([k, n]) => `${n} <b>${rec[k].puntos}</b>`).join(" · ");
+  return `<button class="tarjeta desafio-card" data-ir="desafio">
+      <span class="ico">🎮</span>
+      <span class="tx"><b>Modo desafío</b><small>${mejor ? "Récord: " + mejor : "3 vidas. ¿Hasta dónde llegas?"}</small></span>
+      <span class="ir">Jugar</span></button>`;
+}
+function desafio() {
+  const cfg = app.datos.prefs?.desafio ?? {}, dif = cfg.dificultad ?? "facil", sel = cfg.tipos?.length ? cfg.tipos : app.tiposTodos, rec = app.records();
+  const DESC = { facil: "Lo más conocido", media: "Ya te defiendes", dificil: "Todo el atlas" };
+  vista.innerHTML = `
+    <h1>Modo desafío</h1>
+    <p class="suave">+1 punto por acierto. 3 vidas. No cuenta para tus repasos: juega sin miedo.</p>
+    <section class="tarjeta ajuste"><h2>Dificultad</h2>
+      <div class="opciones dif">${Object.entries(DIFICULTADES).map(([k, n]) => `<button class="opcion" data-d="${k}" aria-pressed="${k === dif}"><b>${n}</b><span>${DESC[k]} · ${app.poolDesafio(k, sel).length} preguntas${rec[k] ? ` · récord ${rec[k].puntos}` : ""}</span></button>`).join("")}</div></section>
+    <section class="tarjeta ajuste"><h2>Categorías</h2>
+      <ul class="interruptores">${app.tiposTodos.map((T) => `<li style="--c:var(--t-${T})"><label><i class="punto"></i><span class="tx"><b>${esc(NOMBRE_CAT[T] ?? T)}</b></span><input type="checkbox" role="switch" data-t="${T}" ${sel.includes(T) ? "checked" : ""} ${sel.includes(T) && sel.length === 1 ? "disabled" : ""}><i class="sw"></i></label></li>`).join("")}</ul></section>
+    <button class="btn prim grande" id="jugar">¡A jugar!</button>`;
+  const guardarY = async (p) => { const y = window.scrollY; await app.guardarPrefs({ desafio: { dificultad: dif, tipos: sel, ...p } }); desafio(); window.scrollTo(0, y); };
+  vista.querySelectorAll("[data-d]").forEach((b) => (b.onclick = () => guardarY({ dificultad: b.dataset.d })));
+  vista.querySelectorAll("input[data-t]").forEach((c) => (c.onchange = () => {
+    const t = [...vista.querySelectorAll("input[data-t]:checked")].map((x) => x.dataset.t);
+    if (!t.length) { c.checked = true; return; }
+    guardarY({ tipos: t });
+  }));
+  $("#jugar").onclick = () => { partida = app.nuevaPartida(dif, sel); ir("juego"); };
+}
+function juego(fb = null) {
+  if (!partida) return ir("desafio");
+  const p = partida, cab = `<div class="marcador"><span class="vidas" aria-label="${p.vidas} vidas">${corazones(p.vidas)}</span><span class="pts"><b>${p.puntos}</b> puntos</span></div>`;
+  if (fb) { // corrección de la última respuesta
+    const it = fb.it;
+    vista.innerHTML = `${cab}
+      <div class="resultado ${fb.ok ? "ok" : "mal"}"><h2>${fb.ok ? "✅ ¡+1!" : p.vidas ? "💔 Pierdes una vida" : "💔 Sin vidas"}</h2>
+        ${fb.ok ? `<p><b>${esc(fb.correcta)}</b></p>` : `<p>Era <b>${esc(fb.correcta)}</b>.</p><p class="suave">Tu respuesta: «${esc(fb.resp)}»</p>`}</div>
+      ${imgsHTML(it, true)}
+      <button class="btn prim" id="sig">${p.fin ? "Ver resultado" : "Siguiente"}</button>`;
+    zoomImgs();
+    $("#sig").onclick = () => (p.fin ? ir("finJuego") : juego());
+    $("#sig").focus();
+    return;
+  }
+  const it = app.P.get(p.cola[p.idx]);
+  vista.innerHTML = `${cab}
+    <div class="cabeza"><span class="num">${p.idx + 1}</span><span class="etiqueta" style="--c:var(--t-${it.tipo})">${esc(NOMBRE_TIPO[it.tipo])}</span></div>
+    <p class="pregunta">${esc(textoCorto(it))}</p>
+    ${imgsHTML(it)}
+    <form class="respuesta" id="f" autocomplete="off">
+      <input id="r" type="text" enterkeyhint="send" autocomplete="off" autocorrect="off" autocapitalize="sentences" spellcheck="false" placeholder="${it.tipo === "pais" ? "País, capital" : it.tipo === "estado" ? "Nombre del estado" : "Tu respuesta"}" aria-label="Tu respuesta">
+      <button class="btn prim" type="submit">Comprobar</button>
+    </form>
+    <button class="btn" id="nose">No lo sé</button>
+    <button class="btn peligro" id="salir">Abandonar partida</button>`;
+  zoomImgs();
+  const enviar = (txt) => { const r = app.responderDesafio(p, txt); juego({ ...r, resp: txt }); window.scrollTo(0, 0); };
+  $("#f").onsubmit = (e) => { e.preventDefault(); const v = $("#r").value.trim(); if (!v) return $("#r").focus(); enviar(v); };
+  $("#nose").onclick = () => enviar("no lo sé");
+  $("#salir").onclick = () => { if (confirm("¿Abandonar la partida? Se guarda tu puntuación si es récord.")) { p.fin = true; ir("finJuego"); } };
+  setTimeout(() => $("#r")?.focus(), 50);
+}
+async function finJuego() {
+  if (!partida) return ir("inicio");
+  const p = partida, previo = app.records()[p.dificultad]?.puntos ?? 0, record = await app.cerrarPartida(p), todo = p.idx >= p.cola.length && p.vidas > 0;
+  vista.innerHTML = `
+    <section class="tarjeta ruta fin-juego">
+      <p class="fecha">Modo desafío · ${DIFICULTADES[p.dificultad]}</p>
+      <p class="cifra-grande"><b>${p.puntos}</b><span>${p.puntos === 1 ? "punto" : "puntos"}</span></p>
+      <p class="titular">${todo ? "¡Lo has acertado todo! 🤯" : record ? "¡Nuevo récord! 🏆" : previo ? `Tu récord: ${previo}` : "¡Buena partida!"}</p>
+      <button class="btn prim" id="otra">Otra partida</button>
+      <button class="btn" data-ir="desafio">Cambiar dificultad</button>
+      <button class="btn" data-ir="inicio">Volver al inicio</button>
+    </section>`;
+  if (record || todo) lanzarConfeti();
+  $("#otra").onclick = () => { partida = app.nuevaPartida(p.dificultad, p.tipos); ir("juego"); };
+}
+function lanzarConfeti() {
+  if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  const c = document.createElement("div"); c.className = "confeti"; c.style.position = "fixed"; c.style.zIndex = 41;
+  const col = ["#e0353b", "#1e6e9e", "#ffd000", "#23866b", "#e2772c", "#5a5fc8"];
+  c.innerHTML = Array.from({ length: 60 }, (_, i) => `<i style="left:${Math.random() * 100}%;background:${col[i % 6]};animation-duration:${1.6 + Math.random() * 1.6}s;animation-delay:${Math.random() * .4}s"></i>`).join("");
+  document.body.append(c); setTimeout(() => c.remove(), 4000);
+}
+
+// ---------- ajustes ----------
+function ajustes() {
+  const N = app.preguntasSesion(), cada = app.corregirCada(), act = app.tipos, todas = app.estadisticasTodas().por_tipo;
+  vista.innerHTML = `
+    <h1>Ajustes</h1>
+    <section class="tarjeta ajuste"><h2>Preguntas por sesión</h2>
+      <div class="seg" role="radiogroup" aria-label="Preguntas por sesión">${[5, 10].map((n) => `<button role="radio" aria-checked="${n === N}" data-n="${n}">${n}</button>`).join("")}</div>
+      <p class="suave">Con 5, una sesión dura un par de minutos. Si te apetece más, haz otra.</p></section>
+    <section class="tarjeta ajuste"><h2>Corrección</h2>
+      <div class="opciones">
+        <button class="opcion" data-c="1" aria-pressed="${cada}"><b>Después de cada pregunta</b><span>Ves al momento si acertaste, con el mapa de la solución.</span></button>
+        <button class="opcion" data-c="0" aria-pressed="${!cada}"><b>Todas al final</b><span>Respondes seguido y corriges la sesión entera al terminar.</span></button>
+      </div></section>
+    <section class="tarjeta ajuste"><h2>Categorías</h2>
+      <ul class="interruptores">${app.tiposTodos.map((T) => { const on = act.includes(T), v = todas[T]; return `<li style="--c:var(--t-${T})"><label><i class="punto"></i><span class="tx"><b>${esc(NOMBRE_CAT[T] ?? T)}</b><small>${v.vistos} vistos de ${v.total}</small></span><input type="checkbox" role="switch" data-t="${T}" ${on ? "checked" : ""} ${on && act.length === 1 ? "disabled" : ""}><i class="sw"></i></label></li>`; }).join("")}</ul>
+      <p class="suave">Pausar una categoría no borra nada: sus repasos esperan y vuelven cuando la reactives. Tiene que quedar al menos una.</p>
+      <p class="suave">Sitios nuevos a medio aprender a la vez: hasta <b>${app.tope()}</b>, según las categorías activas.</p></section>
+    <section class="tarjeta ajuste"><h2>Tu progreso</h2>
+      <p class="suave">Se guarda solo en este móvil. Descarga una copia de vez en cuando o para pasarlo a otro dispositivo.</p>
+      <button class="btn" data-ir="progreso">Descargar o cargar copia</button></section>
+    <p class="pie">Los cambios se aplican desde la próxima sesión.</p>`;
+  const guardarY = async (p) => { const y = window.scrollY; await app.guardarPrefs(p); ajustes(); window.scrollTo(0, y); };
+  vista.querySelectorAll(".seg button").forEach((b) => (b.onclick = () => guardarY({ preguntas: Number(b.dataset.n) })));
+  vista.querySelectorAll(".opcion").forEach((b) => (b.onclick = () => guardarY({ corregir_cada: b.dataset.c === "1" })));
+  vista.querySelectorAll("input[data-t]").forEach((c) => (c.onchange = () => {
+    const sel = [...vista.querySelectorAll("input[data-t]:checked")].map((x) => x.dataset.t);
+    if (!sel.length) { c.checked = true; return; }
+    guardarY({ tipos: sel });
+  }));
+}
+
 function estadisticas() {
   const e = app.estadisticas();
   vista.innerHTML = `

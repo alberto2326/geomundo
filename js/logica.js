@@ -1,14 +1,17 @@
 // Lógica de la app sin DOM: sesiones, corrección, progreso local y copias (exportar / importar). Probada en Node con un almacén en memoria.
-import { crearMotor } from "./comparar.js";
+import { crearMotor, respuestaTexto } from "./comparar.js";
 import { crearSRS, estadoNuevo, C } from "./srs.js";
-import { fechaMadrid, isoMadrid, esFecha, sha256Hex, clonar } from "./util.js";
+import { fechaMadrid, isoMadrid, esFecha, sha256Hex, clonar, crearAzar } from "./util.js";
 import { evaluar, actualizar, CRITERIO_VERSION, porId as medallaPorId } from "./logros.js";
 
-export const APP_VERSION = "2.5.1";
+export const APP_VERSION = "2.6.0";
+export const NOVEDADES_VERSION = "2.6.0"; // sube cuando haya novedades que enseñar a quien ya usaba la app
 export const FORMATO = "geomundo-progreso";
 export const VERSION_FORMATO = 1;
 const CONTADOR_ORIGEN = 75; // la última sesión del sistema original fue ses-0075
 const MODOS = new Set(["nuevo", "repaso", "practica"]);
+export const DIFICULTADES = { facil: "Fácil", media: "Media", dificil: "Difícil" };
+export const VIDAS = 3;
 const RESULTADOS = new Set(["correcta", "incorrecta", "parcial", "casi", "vacia"]);
 
 export function jsonEstable(o) {
@@ -22,15 +25,37 @@ export async function crearApp({ catalogo, almacen, cuarentena = [], imagenes = 
   const items = catalogo.items;
   const motor = crearMotor(items), srs = crearSRS(items, motor), P = motor.porId;
   const hoy = () => fechaMadrid(ahora());
-  const tipos = config?.tipos?.length ? config.tipos : C.TIPOS, mezcla = config?.mezcla ?? C.MEZCLA;
+  const tiposCfg = config?.tipos?.length ? config.tipos : C.TIPOS, mezclaCfg = config?.mezcla ?? C.MEZCLA;
   let d = await almacen.leer();
   d.estado ??= null; d.eventos ??= []; d.prefs ??= {}; d.meta ??= { contador: 0 }; d.desconocidos ??= { items: {} }; d.logros ??= { ganadas: {}, sesiones: [], por_ver: [] };
 
+  // ---- Ajustes de cada persona (se guardan con su progreso) ----
+  /** Categorías activas: las elegidas en Ajustes (al menos una); por defecto, todas. */
+  function tiposActivos() {
+    const p = d.prefs?.tipos, t = Array.isArray(p) ? tiposCfg.filter((x) => p.includes(x)) : tiposCfg;
+    return t.length ? t : tiposCfg;
+  }
+  const mezclaActiva = () => Object.fromEntries(tiposActivos().filter((T) => mezclaCfg[T]).map((T) => [T, mezclaCfg[T]]));
+  /** Tope de ítems «a medio aprender», proporcional al peso de las categorías activas (mínimo 10). */
+  function tope() {
+    const base = config?.max_aprendiendo; if (!base) return 0;
+    const peso = (l) => l.reduce((a, T) => a + (mezclaCfg[T] ?? 0), 0), total = peso(tiposCfg);
+    return total ? Math.min(base, Math.max(10, Math.round((base * peso(tiposActivos())) / total))) : base;
+  }
+  const preguntasSesion = () => (d.prefs?.preguntas === 10 ? 10 : 5);
+  const corregirCada = () => d.prefs?.corregir_cada !== false;
+
   // Ítems que no deben salir: cuarentena y, si ya hay imágenes, los que no tengan las suyas.
-  function excluidos() {
+  function excluidosBase() {
     const ex = new Set(cuarentena);
-    for (const it of items) if (!tipos.includes(it.tipo)) ex.add(it.id);
+    for (const it of items) if (!tiposCfg.includes(it.tipo)) ex.add(it.id);
     if (imagenes && Object.keys(imagenes).length) for (const it of items) if (!imagenes[it.id]?.q) ex.add(it.id);
+    return ex;
+  }
+  /** Para las sesiones: además, las categorías en pausa. (Las medallas no las excluyen, para no ocultarlas.) */
+  function excluidos() {
+    const ex = excluidosBase(), act = tiposActivos();
+    for (const it of items) if (!act.includes(it.tipo)) ex.add(it.id);
     return ex;
   }
   async function guardar(claves) { await almacen.escribir(Object.fromEntries(claves.map((k) => [k, d[k]]))); }
@@ -40,7 +65,7 @@ export async function crearApp({ catalogo, almacen, cuarentena = [], imagenes = 
       const g = Object.fromEntries(Object.entries(logros.ganadas ?? {}).filter(([id]) => !(medallaPorId[id]?.grupo || id === "h-remontada")));
       logros = { ...logros, ganadas: g, criterio: CRITERIO_VERSION };
     }
-    const ev = evaluar({ items, estado, sesiones: logros.sesiones ?? [], excluir: excluidos(), hoy: hoy() });
+    const ev = evaluar({ items, estado, sesiones: logros.sesiones ?? [], excluir: excluidosBase(), hoy: hoy() });
     const { ganadas, nuevas } = actualizar(logros.ganadas, ev, hoy());
     return { logros: { ...logros, ganadas, por_ver: [...(logros.por_ver ?? []), ...nuevas] }, nuevas, evaluacion: ev };
   }
@@ -56,17 +81,21 @@ export async function crearApp({ catalogo, almacen, cuarentena = [], imagenes = 
     sesion: () => d.sesion ?? null,
     sesionPendiente: () => (pendiente(d.sesion) ? d.sesion : null),
     preguntaPendiente: () => pendiente(d.sesion),
-    estadisticas: () => srs.estadisticas(d.estado ?? estadoNuevo(), hoy(), tipos),
+    estadisticas: () => srs.estadisticas(d.estado ?? estadoNuevo(), hoy(), tiposActivos()),
+    estadisticasTodas: () => srs.estadisticas(d.estado ?? estadoNuevo(), hoy(), tiposCfg),
     excluidos,
+    get tipos() { return tiposActivos(); },
+    tiposTodos: tiposCfg,
+    tope, preguntasSesion, corregirCada,
 
-    async empezarDeCero() { d.estado = estadoNuevo(); await guardar(["estado"]); },
+    async empezarDeCero() { d.estado = estadoNuevo(); d.prefs = { ...d.prefs, novedades_vistas: NOVEDADES_VERSION, bienvenida_pendiente: true }; await guardar(["estado", "prefs"]); },
 
     /** Devuelve la sesión pendiente (idempotente) o crea una nueva. */
     async sesionActual() {
       if (pendiente(d.sesion)) return { sesion: d.sesion, nueva: false };
       if (!d.estado) throw new Error("No hay progreso cargado");
       const numero = (d.meta.contador ?? 0) + 1;
-      const ses = srs.crearSesion(clonar(d.estado), hoy(), numero, excluidos(), mezcla, config?.max_aprendiendo ? { max: config.max_aprendiendo, tipos } : null);
+      const ses = srs.crearSesion(clonar(d.estado), hoy(), numero, excluidos(), mezclaActiva(), tope() ? { max: tope(), tipos: tiposActivos() } : null, preguntasSesion());
       if (!ses) return { sesion: null, nueva: false, sinItems: true };
       d.sesion = ses; d.meta = { ...d.meta, contador: numero };
       await guardar(["sesion", "meta"]);
@@ -92,12 +121,42 @@ export async function crearApp({ catalogo, almacen, cuarentena = [], imagenes = 
       r.nuevas = c.nuevas;
       return r;
     },
-    medallas: () => evaluar({ items, estado: d.estado, sesiones: d.logros.sesiones, excluir: excluidos(), hoy: hoy() }),
-    tipos, config,
+    medallas: () => evaluar({ items, estado: d.estado, sesiones: d.logros.sesiones, excluir: excluidosBase(), hoy: hoy() }),
+    config,
     ganadas: () => d.logros.ganadas,
     async verMedallas() { const v = d.logros.por_ver ?? []; if (v.length) { d.logros = { ...d.logros, por_ver: [] }; await guardar(["logros"]); } return v; },
     async guardarBorradores(b) { if (!d.sesion) return; d.sesion = { ...d.sesion, borradores: b }; await guardar(["sesion"]); },
     async abandonarSesion() { d.sesion = undefined; await guardar(["sesion"]); },
+    // ---------- modo desafío: no toca la repetición espaciada ----------
+    /** Sitios de una dificultad: Fácil = primer nivel de cada categoría; Media = hasta el 60 % de sus niveles; Difícil = todo. */
+    poolDesafio(dificultad, tiposSel) {
+      const ex = excluidosBase(), maxNivel = {};
+      for (const it of items) maxNivel[it.tipo] = Math.max(maxNivel[it.tipo] ?? 1, it.nivel);
+      const tope = (T) => (dificultad === "facil" ? 1 : dificultad === "media" ? Math.max(1, Math.ceil(maxNivel[T] * 0.6)) : Infinity);
+      return items.filter((it) => tiposSel.includes(it.tipo) && !ex.has(it.id) && it.nivel <= tope(it.tipo) && !(dificultad !== "dificil" && it.extra));
+    },
+    nuevaPartida(dificultad, tiposSel) {
+      const pool = api.poolDesafio(dificultad, tiposSel), rng = crearAzar(`desafio-${ahora().getTime()}`);
+      return { dificultad, tipos: [...tiposSel], cola: rng.shuffle(pool.map((i) => i.id)), idx: 0, puntos: 0, vidas: VIDAS, fin: false };
+    },
+    /** Corrige la pregunta actual de la partida (sin tocar el progreso). Devuelve {ok, resultado, correcta, partes}. */
+    responderDesafio(partida, resp) {
+      const it = P.get(partida.cola[partida.idx]), [r, info] = motor.comparar(it, resp), ok = r === "ok";
+      if (ok) partida.puntos++; else partida.vidas--;
+      partida.idx++;
+      partida.fin = partida.vidas <= 0 || partida.idx >= partida.cola.length;
+      return { ok, resultado: { ok: "correcta", casi: "casi", parcial: "parcial", vacia: "vacia" }[r] ?? "incorrecta", correcta: respuestaTexto(it), partes: info?.partes ?? null, it };
+    },
+    records: () => d.prefs?.records ?? {},
+    /** Guarda la partida si es récord de su dificultad. Devuelve true si lo es. */
+    async cerrarPartida(partida) {
+      const rec = api.records(), prev = rec[partida.dificultad];
+      if (partida.puntos > 0 && (!prev || partida.puntos > prev.puntos)) {
+        await api.guardarPrefs({ records: { ...rec, [partida.dificultad]: { puntos: partida.puntos, fecha: hoy(), tipos: partida.tipos } } });
+        return true;
+      }
+      return false;
+    },
     async guardarPrefs(p) { d.prefs = { ...d.prefs, ...p }; await guardar(["prefs"]); },
     async anotarExportacion() { d.meta = { ...d.meta, ultima_exportacion: isoMadrid(ahora()) }; await guardar(["meta"]); },
 
@@ -161,7 +220,7 @@ export async function crearApp({ catalogo, almacen, cuarentena = [], imagenes = 
       }
       if (errores.length) return { ok: false, errores: errores.slice(0, 8).concat(errores.length > 8 ? [`… y ${errores.length - 8} error(es) más.`] : []), avisos };
       const datos = { estado: limpio, eventos: Array.isArray(eventos) ? eventos : [], prefs, sesion, contador, desconocidos: { items: nuevosDesc }, logros: { ganadas: {}, sesiones: [], ...(logros ?? {}), por_ver: [] } };
-      const nuevo = srs.estadisticas(limpio, hoy(), tipos), actual = d.estado ? api.estadisticas() : null;
+      const nuevo = srs.estadisticas(limpio, hoy(), tiposCfg), actual = d.estado ? api.estadisticas() : null;
       const pend = sesion ? sesion.preguntas.find((q) => !q.corregida) : null;
       return {
         ok: true, errores, avisos, datos, origen,

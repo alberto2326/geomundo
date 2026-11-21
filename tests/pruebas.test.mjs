@@ -92,6 +92,7 @@ test("§9.1 / §14.9 importar state.json → 107 vistos, 5 consolidados, 76 %", 
 test("§9.12 los vencidos salen primero como repaso", conSemilla, async () => {
   const app = await crearApp({ catalogo, almacen: almacenMemoria(), cuarentena, ahora: reloj("2026-11-08T07:00:00Z") });
   const a = await app.analizarImportacion(semilla); await app.aplicarImportacion(a.datos);
+  await app.guardarPrefs({ preguntas: 10 }); // el manual describe sesiones de 10
   const { sesion } = await app.sesionActual();
   assert.ok(sesion.preguntas.filter((q) => q.modo === "repaso").length >= 6);
   assert.equal(sesion.sesion, "ses-0076");
@@ -216,6 +217,7 @@ test("config: mezcla de seis tipos, todas con imagen; el progreso se conserva", 
   const a = await app.analizarImportacion(semilla); await app.aplicarImportacion(a.datos);
   const e = app.estadisticas();
   assert.equal(e.total, 1422); assert.equal(e.vistos, 107);
+  await app.guardarPrefs({ preguntas: 10 });
   for (let k = 0; k < 5; k++) {
     const { sesion } = await app.sesionActual();
     assert.equal(sesion.preguntas.length, 10);
@@ -261,4 +263,75 @@ test("si solo quedan repasos de un tipo, llenan la sesión antes que la práctic
   const ses = srs.crearSesion(st, "2026-11-20", 1, new Set(), { pais: 3, bandera: 2, fisico: 2, espana: 1, estado: 1, ciudad: 1 }, { max: 60, tipos: C.TIPOS });
   assert.equal(ses.preguntas.filter((q) => q.modo === "repaso").length, 10);
   assert.equal(ses.preguntas.filter((q) => q.modo === "practica").length, 0);
+});
+
+// ---------- Ajustes 2.6: preguntas por sesión, categorías y tope proporcional ----------
+async function appConfig(cuando = "2026-11-21T09:00:00Z") {
+  const config = JSON.parse(fs.readFileSync(new URL("../data/config.json", import.meta.url), "utf8"));
+  const indice = JSON.parse(fs.readFileSync(new URL("../img/indice.json", import.meta.url), "utf8")).items;
+  const app = await crearApp({ catalogo, almacen: almacenMemoria(), cuarentena, imagenes: indice, config, ahora: reloj(cuando) });
+  await app.empezarDeCero();
+  return app;
+}
+test("2.6 por defecto: sesiones de 5, corrección en cada pregunta, todas las categorías, tope 60", async () => {
+  const app = await appConfig();
+  assert.equal(app.preguntasSesion(), 5); assert.equal(app.corregirCada(), true);
+  assert.deepEqual(app.tipos, app.tiposTodos); assert.equal(app.tope(), 60);
+  const { sesion } = await app.sesionActual();
+  assert.equal(sesion.preguntas.length, 5);
+  for (let j = 0; j + 1 < 5; j++) assert.notEqual(sesion.preguntas[j].tipo, sesion.preguntas[j + 1].tipo);
+});
+test("2.6 con 10 preguntas y todas las categorías, la mezcla es la de siempre (3/2/2/1/1/1)", async () => {
+  const app = await appConfig(); await app.guardarPrefs({ preguntas: 10 });
+  const { sesion } = await app.sesionActual();
+  const n = {}; for (const q of sesion.preguntas) n[q.tipo] = (n[q.tipo] ?? 0) + 1;
+  assert.deepEqual(n, { pais: 3, bandera: 2, fisico: 2, espana: 1, estado: 1, ciudad: 1 });
+});
+test("2.6 sesiones de 5: a lo largo de varias, salen todas las categorías", async () => {
+  const app = await appConfig(); const vistos = new Set();
+  for (let k = 0; k < 12; k++) { const { sesion } = await app.sesionActual(); for (const q of sesion.preguntas) { vistos.add(q.tipo); await app.responder(q.n, resp(app, q.n)); } }
+  assert.deepEqual([...vistos].sort(), [...app.tiposTodos].sort());
+});
+test("2.6 solo Estados de EE. UU.: solo salen estados, tope 10, y el resto del progreso se conserva", async () => {
+  const app = await appConfig();
+  const { sesion } = await app.sesionActual(); for (const q of sesion.preguntas) await app.responder(q.n, resp(app, q.n));
+  const antes = Object.keys(app.estado().items).length;
+  await app.guardarPrefs({ tipos: ["estado"] });
+  assert.deepEqual(app.tipos, ["estado"]); assert.equal(app.tope(), 10);
+  let hechas = 0;
+  for (let k = 0; k < 6; k++) {
+    const { sesion: s } = await app.sesionActual(); if (!s) break; // tope alcanzado y nada pendiente: por hoy se acabó
+    hechas++; assert.ok(s.preguntas.every((q) => q.tipo === "estado")); for (const q of s.preguntas) await app.responder(q.n, "no sé");
+  }
+  assert.ok(hechas >= 2 && hechas < 6); // con tope 10 no entran estados nuevos sin parar
+  assert.ok(app.srs.enAprendizajeTotal(app.estado(), app.tipos) <= 10 + 5);
+  assert.ok(Object.keys(app.estado().items).length >= antes);
+  await app.guardarPrefs({ tipos: [] }); assert.deepEqual(app.tipos, app.tiposTodos); // nunca ninguna: vuelven todas
+});
+test("2.6 tope proporcional: países + banderas = 30", async () => {
+  const app = await appConfig(); await app.guardarPrefs({ tipos: ["pais", "bandera"] }); assert.equal(app.tope(), 30);
+});
+test("2.6 los ajustes viajan con la copia de progreso", async () => {
+  const app = await appConfig(); await app.guardarPrefs({ tipos: ["pais", "espana"], preguntas: 10, corregir_cada: false });
+  const otra = await appConfig(); const a = await otra.analizarImportacion((await app.exportar()).texto); await otra.aplicarImportacion(a.datos);
+  assert.deepEqual(otra.tipos, ["pais", "espana"]); assert.equal(otra.preguntasSesion(), 10); assert.equal(otra.corregirCada(), false);
+});
+
+// ---------- Modo desafío ----------
+test("desafío: no toca la repetición espaciada; 3 vidas; récord por dificultad", async () => {
+  const app = await appConfig();
+  const antes = structuredClone(app.estado()), eventos = app.datos.eventos.length;
+  const facil = app.poolDesafio("facil", app.tiposTodos), media = app.poolDesafio("media", app.tiposTodos), dificil = app.poolDesafio("dificil", app.tiposTodos);
+  assert.ok(facil.length > 100 && facil.length < media.length && media.length < dificil.length);
+  const p = app.nuevaPartida("facil", ["pais", "bandera"]);
+  assert.ok(p.cola.every((id) => ["pais", "bandera"].includes(app.P.get(id).tipo)));
+  assert.equal(new Set(p.cola).size, p.cola.length); // sin repetir
+  const bien = (id) => { const it = app.P.get(id); return it.tipo === "pais" ? `${it.nombre}, ${it.capitales[0].nombre}` : it.nombre; };
+  for (let k = 0; k < 4; k++) assert.equal(app.responderDesafio(p, bien(p.cola[p.idx])).ok, true);
+  for (let k = 0; k < 3; k++) assert.equal(app.responderDesafio(p, "no sé").ok, false);
+  assert.equal(p.puntos, 4); assert.equal(p.vidas, 0); assert.equal(p.fin, true);
+  assert.deepEqual(app.estado(), antes); assert.equal(app.datos.eventos.length, eventos);
+  assert.equal(await app.cerrarPartida(p), true); assert.equal(app.records().facil.puntos, 4);
+  const q = app.nuevaPartida("facil", ["pais"]); q.puntos = 3; assert.equal(await app.cerrarPartida(q), false);
+  assert.equal(app.records().facil.puntos, 4); assert.equal(app.records().dificil, undefined);
 });

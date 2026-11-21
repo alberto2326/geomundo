@@ -119,8 +119,24 @@ export function crearSRS(items, motor) {
     return mejor[1];
   }
 
+  /** Reparte N preguntas entre los tipos según la mezcla (pesos). Lo que no cabe entero se sortea en proporción a los decimales,
+   *  así los tipos pequeños también salen en sesiones cortas. Con N = suma de pesos devuelve la mezcla tal cual (sin usar el azar). */
+  function cuotas(mezcla, N, rng) {
+    const tipos = C.TIPOS.filter((T) => mezcla[T] > 0), suma = tipos.reduce((a, T) => a + mezcla[T], 0), out = {};
+    if (!suma) return out;
+    const resto = [];
+    for (const T of tipos) { const x = (mezcla[T] * N) / suma; out[T] = Math.floor(x + 1e-9); if (x - out[T] > 1e-9) resto.push([T, x - out[T]]); }
+    let faltan = N - tipos.reduce((a, T) => a + out[T], 0);
+    while (faltan > 0 && resto.length) {
+      const tot = resto.reduce((a, r) => a + r[1], 0); let u = rng.random() * tot, k = 0;
+      while (k < resto.length - 1 && u >= resto[k][1]) { u -= resto[k][1]; k++; }
+      out[resto[k][0]]++; resto.splice(k, 1); faltan--;
+    }
+    return out;
+  }
+
   /** Elige SESION_N ítems [[item, modo]] o null. `excluir`: ids que no deben salir (cuarentena, sin imagen). */
-  function seleccionar(st, hoy, semilla, excluir = new Set(), mezcla = C.MEZCLA, global = null) {
+  function seleccionar(st, hoy, semilla, excluir = new Set(), mezcla = C.MEZCLA, global = null, N = N) {
     const rng = crearAzar(semilla), reg = st.items;
     const usados = new Set(), claves = new Set(), subs = Object.fromEntries(C.TIPOS.map((t) => [t, new Set()]));
     let sel = [];
@@ -157,37 +173,38 @@ export function crearSRS(items, motor) {
       return got;
     }
     const vencidosLibres = (T) => datos(T)[0].filter((i) => !usados.has(i)).length;
-    // 1) Cuota de cada tipo con sus repasos y nuevos
-    for (const T of C.TIPOS) if (mezcla[T]) sel = sel.concat(tomar(T, mezcla[T]));
+    // 1) Cuota de cada tipo con sus repasos y nuevos (la mezcla se escala a N preguntas)
+    const cuota = cuotas(mezcla, N, rng);
+    for (const T of C.TIPOS) if (cuota[T]) sel = sel.concat(tomar(T, cuota[T]));
     // 2) Huecos libres: primero repasos (y nuevos si caben) de los tipos con más atraso
-    for (let guard = 0; sel.length < C.SESION_N && guard < 20; guard++) {
+    for (let guard = 0; sel.length < N && guard < 20; guard++) {
       const antes = sel.length;
       const orden = C.TIPOS.filter((T) => mezcla[T] !== undefined || C.RELLENO_PREF.includes(T)).sort((x, y) => vencidosLibres(y) - vencidosLibres(x));
-      const maxTipo = Math.ceil(C.SESION_N / 2); // nunca más de la mitad de un tipo: así siempre se pueden alternar
-      for (const T of orden) { if (sel.length >= C.SESION_N) break; const ya = sel.filter((g) => g[0].tipo === T).length; if (ya < maxTipo) sel = sel.concat(tomar(T, Math.min(C.SESION_N - sel.length, maxTipo - ya))); }
+      const maxTipo = Math.ceil(N / 2); // nunca más de la mitad de un tipo: así siempre se pueden alternar
+      for (const T of orden) { if (sel.length >= N) break; const ya = sel.filter((g) => g[0].tipo === T).length; if (ya < maxTipo) sel = sel.concat(tomar(T, Math.min(N - sel.length, maxTipo - ya))); }
       if (sel.length === antes) break;
     }
     // 2b) Si siguen quedando huecos y solo quedan repasos de uno o dos tipos, van sin límite por tipo
     //     (pueden salir seguidos del mismo tipo: mejor un repaso pendiente que una práctica)
-    for (let guard = 0; sel.length < C.SESION_N && guard < 20; guard++) {
+    for (let guard = 0; sel.length < N && guard < 20; guard++) {
       const antes = sel.length;
       const orden = C.TIPOS.filter((T) => mezcla[T] !== undefined || C.RELLENO_PREF.includes(T)).sort((x, y) => vencidosLibres(y) - vencidosLibres(x));
-      for (const T of orden) { if (sel.length >= C.SESION_N) break; sel = sel.concat(tomar(T, C.SESION_N - sel.length)); }
+      for (const T of orden) { if (sel.length >= N) break; sel = sel.concat(tomar(T, N - sel.length)); }
       if (sel.length === antes) break;
     }
     // 3) Solo si no queda ningún repaso pendiente ni nuevo posible: práctica extra, repartida según la mezcla
-    for (let guard = 0; sel.length < C.SESION_N && guard < 20; guard++) {
+    for (let guard = 0; sel.length < N && guard < 20; guard++) {
       const antes = sel.length;
-      for (const T of C.TIPOS) { if (sel.length >= C.SESION_N) break; if (mezcla[T]) sel = sel.concat(tomar(T, Math.min(mezcla[T], C.SESION_N - sel.length), true)); }
-      if (sel.length === antes) for (const T of C.RELLENO_PREF) { if (sel.length >= C.SESION_N) break; sel = sel.concat(tomar(T, C.SESION_N - sel.length, true)); }
+      for (const T of C.TIPOS) { if (sel.length >= N) break; if (mezcla[T]) sel = sel.concat(tomar(T, Math.min(Math.max(cuota[T], 1), N - sel.length), true)); }
+      if (sel.length === antes) for (const T of C.RELLENO_PREF) { if (sel.length >= N) break; sel = sel.concat(tomar(T, N - sel.length, true)); }
       if (sel.length === antes) break;
     }
-    if (sel.length < C.SESION_N) return null;
-    return ordenar(sel.slice(0, C.SESION_N), rng);
+    if (sel.length < N) return null;
+    return ordenar(sel.slice(0, N), rng);
   }
 
-  function crearSesion(st, hoy, numero, excluir, mezcla, global = null) {
-    const el = seleccionar(st, hoy, `${hoy}-${numero}`, excluir, mezcla, global);
+  function crearSesion(st, hoy, numero, excluir, mezcla, global = null, N = C.SESION_N) {
+    const el = seleccionar(st, hoy, `${hoy}-${numero}`, excluir, mezcla, global, N);
     if (!el) return null;
     return {
       sesion: `ses-${String(numero).padStart(4, "0")}`, fecha: hoy, creada_en: new Date().toISOString(),

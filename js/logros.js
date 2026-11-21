@@ -139,7 +139,7 @@ export const MEDALLAS = [
 
   // Hitos
   { id: "h-primera", cat: "hitos", tipo: "evento", nombre: "Primer sello en el pasaporte", emoji: "🛂", desc: "Termina tu primera sesión", nivelFijo: "bronce" },
-  { id: "h-pleno", cat: "hitos", tipo: "evento", nombre: "Pleno", emoji: "🎯", desc: "Una sesión con 10/10", nivelFijo: "plata" },
+  { id: "h-pleno", cat: "hitos", tipo: "evento", nombre: "Pleno", emoji: "🎯", desc: "Una sesión sin un solo fallo", nivelFijo: "plata" },
   { id: "h-pleno15", cat: "hitos", tipo: "evento", nombre: "Pleno al quince", emoji: "🏆", desc: "Quince sesiones perfectas", nivelFijo: "oro" },
   { id: "h-remontada", cat: "hitos", tipo: "evento", nombre: "Remontada", emoji: "💪", desc: "Aprende algo que habías fallado 3 veces o más", nivelFijo: "plata" },
   { id: "h-madrugador", cat: "hitos", tipo: "evento", nombre: "Madrugador", emoji: "🌅", desc: "Termina una sesión antes de las 8:00", nivelFijo: "bronce" },
@@ -170,7 +170,7 @@ export function evaluar({ items, estado, sesiones = [], excluir = new Set(), hoy
   const vistos = Object.keys(reg).length, total = items.length;
   const horas = sesiones.map((s) => s.hora_fin).filter(Boolean).map((h) => Number(h.slice(11, 13)));
   const sabado = (estado?.dias_activos ?? []).some((f) => new Date(f + "T12:00:00Z").getUTCDay() === 6 && (estado.dias_activos).includes(sumarDias(f, 1)));
-  const plenos = sesiones.filter((s) => s.total >= 10 && s.aciertos === s.total).length;
+  const plenos = sesiones.filter((s) => s.total >= 5 && s.aciertos === s.total).length;
   const ev = {
     "h-primera": sesiones.length >= 1, "h-pleno": plenos >= 1, "h-pleno15": plenos >= 15,
     "h-remontada": Object.values(reg).some((x) => (x.fallos ?? 0) >= 3 && (x.intervalo ?? 0) >= DIAS_NIVEL.bronce),

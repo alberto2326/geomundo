@@ -32,7 +32,7 @@ a { color: var(--oceano); font-weight: 600; }
 .barra button { background: none; border: 0; cursor: pointer; border-radius: 12px; }
 .marca { min-width: 0; display: flex; align-items: center; gap: 10px; padding: 2px 4px 2px 0; color: var(--tinta); }
 .marca img { width: 34px; height: 34px; border-radius: 10px; box-shadow: 0 4px 10px -4px rgba(16,42,60,.45); }
-.marca span { font-family: var(--display); font-weight: 800; font-size: 18px; letter-spacing: -.02em; white-space: nowrap; }
+.marca span { font-family: var(--display); font-weight: 800; font-size: 18px; letter-spacing: -.02em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .barra nav { display: flex; gap: 6px; }
 .barra nav button { width: 40px; height: 40px; display: grid; place-items: center; background: var(--papel); color: var(--tinta); border: 1px solid var(--borde); border-radius: 50%; }
 .barra nav button svg { width: 20px; height: 20px; }
@@ -191,3 +191,51 @@ details summary { cursor: pointer; font-weight: 600; padding: 6px 0; }
 
 @media (prefers-reduced-motion: reduce) { *, .fiesta, .fiesta * { animation: none !important; transition: none !important; } .confeti { display: none; } }
 @media (max-width: 380px) { .ruta .cifra-grande b { font-size: 60px; } .marca span { font-size: 16.5px; } .tipos li { grid-template-columns: 98px 1fr auto; font-size: 13.5px; } }
+
+/* ---- ajustes ---- */
+.ajuste h2 { margin: 0 0 12px; font-family: var(--display); font-weight: 800; font-size: 20px; }
+.seg { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; padding: 5px; background: var(--mar2); border-radius: 16px; }
+.seg button { border: 0; background: none; padding: 12px; border-radius: 12px; font-family: var(--display); font-weight: 800; font-size: 22px; color: var(--suave); cursor: pointer; }
+.seg button[aria-checked="true"] { background: var(--papel); color: var(--tinta); box-shadow: var(--sombra); }
+.opciones { display: grid; gap: 8px; }
+.opcion { text-align: left; padding: 14px 16px 14px 50px; border-radius: 16px; border: 1.5px solid var(--borde); background: var(--papel); cursor: pointer; position: relative; }
+.opcion::before { content: ""; position: absolute; left: 16px; top: 17px; width: 18px; height: 18px; border-radius: 50%; border: 2px solid var(--linea); }
+.opcion[aria-pressed="true"] { border-color: var(--tinta); }
+.opcion[aria-pressed="true"]::before { border-color: var(--tinta); background: radial-gradient(circle, var(--tinta) 0 4px, transparent 5px); }
+.opcion b { display: block; } .opcion span { display: block; font-size: 14px; color: var(--suave); margin-top: 2px; }
+.interruptores { list-style: none; padding: 0; margin: 0; }
+.interruptores li { border-bottom: 1px solid var(--borde); } .interruptores li:last-child { border-bottom: 0; }
+.interruptores label { display: flex; align-items: center; gap: 12px; padding: 12px 2px; cursor: pointer; }
+.interruptores .punto { width: 12px; height: 12px; border-radius: 50%; background: var(--c); flex: none; }
+.interruptores .tx { flex: 1; min-width: 0; } .interruptores small { display: block; color: var(--suave); font-size: 13px; }
+.interruptores input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.interruptores .sw { flex: none; width: 50px; height: 30px; border-radius: 30px; background: var(--linea); position: relative; transition: background .15s; }
+.interruptores .sw::after { content: ""; position: absolute; left: 3px; top: 3px; width: 24px; height: 24px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.3); transition: transform .15s; }
+.interruptores input:checked + .sw { background: var(--ok); }
+.interruptores input:checked + .sw::after { transform: translateX(20px); }
+.interruptores input:disabled + .sw { opacity: .55; }
+.interruptores input:focus-visible + .sw { outline: 3px solid var(--oceano); outline-offset: 2px; }
+.tipos li.pausa { opacity: .45; }
+.tipos li small { display: block; font-size: 11.5px; color: var(--suave); }
+/* ---- ventana emergente ---- */
+.modal { position: fixed; inset: 0; z-index: 45; background: rgba(6,18,27,.55); display: grid; place-items: center; padding: 16px; animation: aparece .2s ease-out; }
+.modal .caja { width: 100%; max-width: 420px; max-height: 90vh; overflow: auto; background: var(--papel); border-radius: 24px; padding: 22px 20px 16px; box-shadow: 0 30px 60px -20px rgba(0,0,0,.5); }
+.modal h2 { margin: 0 0 12px; font-family: var(--display); font-weight: 800; font-size: 24px; letter-spacing: -.02em; }
+.lista-ventana { list-style: none; padding: 0; margin: 0 0 8px; display: grid; gap: 10px; }
+.lista-ventana li { position: relative; padding-left: 34px; font-size: 15.5px; line-height: 1.4; }
+.lista-ventana li > span:first-child { position: absolute; left: 0; top: 0; font-size: 20px; line-height: 1.1; }
+.modal .acciones { display: grid; gap: 6px; margin-top: 12px; } .modal .acciones .btn { margin: 0; }
+
+/* ---- modo desafío ---- */
+.desafio-card { display: flex; align-items: center; gap: 14px; width: 100%; text-align: left; cursor: pointer; font: inherit; color: inherit;
+  background: linear-gradient(120deg, color-mix(in srgb, var(--pin) 10%, var(--papel)), var(--papel) 60%); }
+.desafio-card .ico { flex: none; width: 48px; height: 48px; border-radius: 16px; display: grid; place-items: center; font-size: 26px; background: color-mix(in srgb, var(--pin) 18%, var(--papel)); }
+.desafio-card .tx { flex: 1; min-width: 0; } .desafio-card b { display: block; font-family: var(--display); font-weight: 800; font-size: 20px; letter-spacing: -.02em; }
+.desafio-card small { display: block; color: var(--suave); font-size: 14px; } .desafio-card small b { display: inline; font-family: inherit; font-size: inherit; color: var(--tinta); }
+.desafio-card .ir { flex: none; background: var(--tinta); color: var(--papel); font-weight: 700; padding: 9px 16px; border-radius: 99px; font-size: 15px; }
+.marcador { display: flex; justify-content: space-between; align-items: center; margin: 4px 0 6px; }
+.marcador .vidas { font-size: 26px; letter-spacing: 2px; font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif; }
+.marcador .pts { font-size: 15px; color: var(--suave); } .marcador .pts b { font-family: var(--display); font-weight: 800; font-size: 30px; color: var(--tinta); letter-spacing: -.02em; margin-right: 4px; }
+.btn.grande { padding: 18px; font-size: 19px; }
+.fin-juego .btn { margin-top: 10px; }
+.sub-ventana { margin: -4px 0 12px; color: var(--suave); }
