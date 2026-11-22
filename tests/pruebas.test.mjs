@@ -360,3 +360,22 @@ test("tope dinámico: sube con el ritmo, baja si aciertas poco, entre 10 y el m�
   pais.slice(0, 20).forEach((it) => st.items[it.id].historial.push(["2026-11-17", 1]));
   assert.equal(app.topeInfo().tope, 60);
 });
+
+test("fichas: lo nuevo se enseña antes y pasa al final; lo fallado dos veces seguidas, también", async () => {
+  const app = await appConfig();
+  const { sesion } = await app.sesionActual();
+  const q1 = app.preguntaPendiente(); assert.equal(q1.modo, "nuevo"); assert.equal(app.necesitaFicha(q1), "nuevo");
+  const id = q1.id, nuevoN = await app.marcarFicha(q1.n);
+  const ses = app.sesion();
+  assert.equal(ses.preguntas[ses.preguntas.length - 1].id, id); assert.equal(nuevoN, 5);
+  assert.deepEqual(ses.preguntas.map((x) => x.n), [1, 2, 3, 4, 5]);
+  assert.equal(app.necesitaFicha(ses.preguntas[4]), null); // ya vista
+  // fallo doble → refuerzo
+  const st = app.estado(); st.items["pc-ne"] = { ef: 2.3, reps: 0, intervalo: 1, vence: "2026-11-21", historial: [["2026-11-19", 0], ["2026-11-20", 0]] };
+  assert.equal(app.necesitaFicha({ id: "pc-ne", modo: "repaso", n: 1 }), "refuerzo");
+  st.items["pc-ne"].historial.push(["2026-11-21", 1]);
+  assert.equal(app.necesitaFicha({ id: "pc-ne", modo: "repaso", n: 1 }), null);
+  // responder sigue funcionando tras reordenar
+  for (const q of [...app.sesion().preguntas]) await app.responder(q.n, "no sé");
+  assert.equal(app.preguntaPendiente(), null);
+});

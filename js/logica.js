@@ -4,8 +4,8 @@ import { crearSRS, estadoNuevo, C } from "./srs.js";
 import { fechaMadrid, isoMadrid, esFecha, sha256Hex, clonar, crearAzar, difDias, sumarDias } from "./util.js";
 import { evaluar, actualizar, CRITERIO_VERSION, porId as medallaPorId } from "./logros.js";
 
-export const APP_VERSION = "2.6.1";
-export const NOVEDADES_VERSION = "2.6.0"; // sube cuando haya novedades que enseñar a quien ya usaba la app
+export const APP_VERSION = "2.7.0";
+export const NOVEDADES_VERSION = "2.7.0"; // sube cuando haya novedades que enseñar a quien ya usaba la app
 export const FORMATO = "geomundo-progreso";
 export const VERSION_FORMATO = 1;
 const CONTADOR_ORIGEN = 75; // la última sesión del sistema original fue ses-0075
@@ -149,6 +149,26 @@ export async function crearApp({ catalogo, almacen, cuarentena = [], imagenes = 
     config,
     ganadas: () => d.logros.ganadas,
     async verMedallas() { const v = d.logros.por_ver ?? []; if (v.length) { d.logros = { ...d.logros, por_ver: [] }; await guardar(["logros"]); } return v; },
+    // ---------- fichas: aprender antes de preguntar ----------
+    /** "nuevo" si es la primera vez que sale; "refuerzo" si lo has fallado dos veces seguidas; null si se pregunta directamente. */
+    necesitaFicha(q) {
+      if (!q || q.ficha || q.corregida) return null;
+      if (q.modo === "nuevo") return "nuevo";
+      const h = d.estado?.items?.[q.id]?.historial ?? [];
+      if (q.modo === "repaso" && h.length >= 2 && !h[h.length - 1][1] && !h[h.length - 2][1]) return "refuerzo";
+      return null;
+    },
+    /** Marca la ficha como vista y manda esa pregunta al final de las pendientes, para que no se responda justo después de verla. */
+    async marcarFicha(n) {
+      const ses = clonar(d.sesion), i = ses.preguntas.findIndex((x) => x.n === n);
+      if (i < 0) return;
+      const [q] = ses.preguntas.splice(i, 1); q.ficha = true; ses.preguntas.push(q);
+      const pend = ses.preguntas.filter((x) => !x.corregida), nums = pend.map((x) => x.n).sort((a, b) => a - b);
+      pend.forEach((x, k) => (x.n = nums[k]));
+      delete ses.borradores;
+      d.sesion = ses; await guardar(["sesion"]);
+      return ses.preguntas.find((x) => x === q).n;
+    },
     async guardarBorradores(b) { if (!d.sesion) return; d.sesion = { ...d.sesion, borradores: b }; await guardar(["sesion"]); },
     async abandonarSesion() { d.sesion = undefined; await guardar(["sesion"]); },
     // ---------- modo desafío: no toca la repetición espaciada ----------

@@ -240,3 +240,11 @@ details summary { cursor: pointer; font-weight: 600; padding: 6px 0; }
 .fin-juego .btn { margin-top: 10px; }
 .sub-ventana { margin: -4px 0 12px; color: var(--suave); }
 .tope-info { margin-top: 12px; padding: 12px 14px; border-radius: 14px; background: var(--mar2); } .tope-info p { margin: 2px 0; }
+
+/* ---- ficha de aprendizaje ---- */
+.ficha { text-align: center; padding: 20px 18px; background: var(--curvas) 0 0 / 240px 160px, var(--papel); }
+.ficha .sello-ficha { display: inline-block; margin: 0 0 6px; padding: 5px 14px; border-radius: 99px; font-size: 14px; font-weight: 700; background: color-mix(in srgb, var(--oceano) 14%, var(--papel)); color: var(--oceano); }
+.ficha.refuerzo .sello-ficha { background: color-mix(in srgb, var(--pin) 14%, var(--papel)); color: var(--pin-osc); }
+.ficha h1 { font-size: 40px; margin: 6px 0 4px; }
+.ficha .sub { font-size: 18px; margin: 0 0 8px; }
+.ficha .pista { font-size: 15.5px; color: var(--suave); margin: 8px auto 0; max-width: 34ch; line-height: 1.4; }

@@ -13,7 +13,7 @@ const fechaCorta = (iso, hoy) => { const d = difDias(iso, hoy); return d === 0 ?
 const fechaLarga = (iso) => new Date(iso + "T12:00:00Z").toLocaleDateString("es-ES", { weekday: "long", day: "numeric", month: "long", timeZone: "UTC" });
 const MODO = { nuevo: "nuevo", repaso: "repaso", practica: "práctica extra" };
 const NOMBRE_CAT = { pais: "Países y capitales", bandera: "Banderas", fisico: "Geografía física", espana: "España", estado: "Estados de EE. UU.", ciudad: "Ciudades del mundo" };
-let app, imagenes = null, persistente = null, ultimaRetro = null, partida = null;
+let app, imagenes = null, persistente = null, ultimaRetro = null, partida = null, vecinos = {};
 
 
 // ---------- arranque ----------
@@ -25,6 +25,7 @@ async function iniciar() {
       fetch("img/indice.json").then((r) => (r.ok ? r.json() : null)).catch(() => null),
       fetch("data/config.json").then((r) => (r.ok ? r.json() : null)).catch(() => null),
     ]);
+    vecinos = await fetch("data/vecinos.json").then((r) => (r.ok ? r.json() : null)).then((x) => x?.paises ?? {}).catch(() => ({}));
     imagenes = indice?.items && Object.keys(indice.items).length ? indice.items : null;
     const almacen = await abrirIndexedDB();
     app = await crearApp({ catalogo, almacen, cuarentena, imagenes, config });
@@ -47,7 +48,7 @@ function ventanaInicial() {
     ventana(`<h2>¡Bienvenido! 🌍</h2>
       <p class="sub-ventana">Dos formas de jugar:</p>
       <ul class="lista-ventana">
-        <li><span>🗺️</span><b>Sesión del día.</b> 5 preguntas con mapa. Lo que fallas vuelve pronto; lo que aciertas, cada vez más tarde. Así se te queda para siempre.</li>
+        <li><span>🗺️</span><b>Sesión del día.</b> 5 preguntas con mapa. Lo nuevo te lo enseñamos antes de preguntártelo; lo que fallas vuelve pronto y lo que aciertas, cada vez más tarde. Así se te queda para siempre.</li>
         <li><span>🎮</span><b>Modo desafío.</b> 3 vidas, preguntas sin parar. ¿Hasta dónde llegas?</li>
         <li><span>🏅</span><b>Medallas y rachas</b> por jugar cada día.</li>
         <li><span>⚙️</span><b>Tú eliges</b> qué aprender, en Ajustes.</li>
@@ -55,12 +56,14 @@ function ventanaInicial() {
       [["¡Vamos!", true, () => app.guardarPrefs({ bienvenida_pendiente: false })], ["Ver ajustes", false, async () => { await app.guardarPrefs({ bienvenida_pendiente: false }); ir("ajustes"); }]]);
   } else if (pr.novedades_vistas !== NOVEDADES_VERSION) {
     const fin = () => app.guardarPrefs({ novedades_vistas: NOVEDADES_VERSION });
+    const vioLa26 = (pr.novedades_vistas ?? "0") >= "2.6.0";
     ventana(`<h2>Novedades 🎉</h2>
       <ul class="lista-ventana">
-        <li><span>🎮</span><b>Nuevo: Modo desafío.</b> 3 vidas y a por el récord. No toca tus repasos.</li>
-        <li><span>⏱️</span><b>Sesiones de 5.</b> Más rápidas. ¿Prefieres 10? En Ajustes.</li>
-        <li><span>✅</span><b>Corrección al momento.</b> O todas al final, como prefieras.</li>
-        <li><span>🎯</span><b>Tú eliges qué aprender.</b> Pausa categorías sin perder nada.</li>
+        <li><span>✨</span><b>Fichas para aprender.</b> Lo nuevo ya no te pilla en frío: primero lo ves con su mapa, su capital y sus vecinos, y luego te lo preguntamos.</li>
+        <li><span>💪</span><b>Lo que se te resiste.</b> Si fallas algo dos veces seguidas, te lo enseñamos otra vez antes de preguntártelo.</li>
+        ${vioLa26 ? "" : `<li><span>🎮</span><b>Modo desafío.</b> 3 vidas y a por el récord. No toca tus repasos.</li>
+        <li><span>⏱️</span><b>Sesiones de 5</b> y <b>corrección al momento.</b> Si prefieres otra cosa, en Ajustes.</li>
+        <li><span>🎯</span><b>Tú eliges qué aprender.</b> Pausa categorías sin perder nada.</li>`}
       </ul>`,
       [["¡Genial!", true, fin], ["Ver ajustes", false, async () => { await fin(); ir("ajustes"); }]]);
   }
@@ -216,9 +219,47 @@ function imgsHTML(it, solucion = false) {
   return `<div class="imgs ${dos ? "dos" : ""}">${caja(im?.q, dos ? "Vista cercana" : "Mapa")}${dos ? caja(im?.c, "Vista de contexto") : ""}</div>`;
 }
 function puntos(ses, actual) { return `<div class="puntos">${ses.preguntas.map((q) => `<i class="${q.corregida ? "h" : ""} ${q.n === actual ? "a" : ""}"></i>`).join("")}</div>`; }
+// ---------- ficha: aprender antes de preguntar ----------
+const lista = (l) => (l.length <= 1 ? l.join("") : l.slice(0, -1).join(", ") + " y " + l[l.length - 1]);
+/** Pista de situación de un país: zona, vecinos y si tiene mar. */
+function pistaPais(idPais) {
+  const v = vecinos[idPais]; if (!v) return "";
+  const nombres = v.vecinos.map((i) => app.P.get(i)?.nombre).filter(Boolean);
+  const zona = v.zona ? `En ${v.zona}.` : "";
+  if (!nombres.length) return `${zona} Es un país insular: no tiene fronteras terrestres.`;
+  return `${zona} Limita con ${lista(nombres)}.${v.interior ? " Sin salida al mar." : ""}`;
+}
+function ficha(q, tipo) {
+  const it = app.P.get(q.id), im = imagenes?.[it.id] ?? {}, ses = app.sesion(), tot = ses.preguntas.length;
+  const quedanDespues = ses.preguntas.filter((x) => !x.corregida && x !== q).length;
+  let sub = "";
+  if (it.capitales) sub = `Capital: <b>${esc(it.capitales.map((c) => c.nombre).join(" / "))}</b>`;
+  else if (it.capital_ref) sub = `Capital: <b>${esc(it.capital_ref.join(" / "))}</b>`;
+  else if (it.tipo === "ciudad" && it.pais) sub = `Ciudad de <b>${esc(it.pais)}</b>`;
+  const pista = it.tipo === "pais" ? pistaPais(it.id) : it.tipo === "bandera" ? pistaPais("pc-" + it.iso) : "";
+  const fotos = it.tipo === "bandera" ? (im.q ? [[im.q, "Bandera"]] : []) : [[im.a, "Mapa"], it.tipo === "pais" || it.tipo === "estado" || it.tipo === "fisico" ? [im.c, "Dónde está"] : null].filter((x) => x && x[0]);
+  vista.innerHTML = `
+    <div class="cabeza"><span class="num">${q.n}/${tot}</span><span class="etiqueta" style="--c:var(--t-${it.tipo})">${esc(NOMBRE_TIPO[it.tipo])}</span></div>
+    ${puntos(ses, q.n)}
+    <section class="tarjeta ficha ${tipo}">
+      <p class="sello-ficha">${tipo === "nuevo" ? "✨ Nuevo para ti" : "💪 Este se te resiste: repásalo"}</p>
+      <h1>${esc(it.nombre)}</h1>
+      ${sub ? `<p class="sub">${sub}</p>` : ""}
+      ${pista ? `<p class="pista">📍 ${esc(pista.trim())}</p>` : ""}
+    </section>
+    ${fotos.length ? `<div class="imgs ${fotos.length > 1 ? "dos" : ""}">${fotos.map(([src, cap]) => `<figure><img src="${esc(src)}" alt="${cap}" decoding="async"><figcaption>${cap}</figcaption></figure>`).join("")}</div>` : ""}
+    ${it.dato ? `<div class="dato">💡 ${esc(it.dato)}</div>` : ""}
+    <button class="btn prim" id="vale">¡Lo tengo!</button>
+    <p class="suave centro">${quedanDespues ? "Te lo preguntaremos al final de la sesión." : "Ahora te lo preguntamos."}</p>`;
+  zoomImgs();
+  $("#vale").onclick = async () => { $("#vale").disabled = true; await app.marcarFicha(q.n); ir("pregunta"); };
+}
+
 function pregunta() {
   const ses = app.sesion(), q = app.preguntaPendiente();
   if (!q) return ir("hoja");
+  const tipoFicha = app.necesitaFicha(q);
+  if (tipoFicha) return ficha(q, tipoFicha);
   const it = app.P.get(q.id), tot = ses.preguntas.length, cada = app.corregirCada();
   vista.innerHTML = `
     <div class="cabeza"><span class="num">${q.n}/${tot}</span><span class="etiqueta" style="--c:var(--t-${it.tipo})">${esc(NOMBRE_TIPO[it.tipo])}${q.modo === "repaso" ? " · repaso" : ""}</span></div>
@@ -531,6 +572,7 @@ async function progreso() {
       <p>• Siete cordilleras y mesetas: <b>GMBA Mountain Inventory v2</b> (CC BY 4.0). Snethlage, M.A. et al. (2022), «A hierarchical inventory of the world's mountains for global comparative mountain science», <i>Scientific Data</i> 9:149, doi:10.1038/s41597-022-01256-y; GMBA-EarthEnv, doi:10.48601/earthenv-t9k2-1407.</p>
       <p>• Mar de Scotia y mar Cantábrico: <b>SeaVoX v19</b> (BODC/Marine Regions, CC BY 4.0, doi:10.14284/590); límite del Cantábrico según la división <b>ICES 8.c</b> (CC BY 4.0).</p>
       <p>• Ciudades de España: coordenadas de OpenStreetMap/Wikidata.</p>
+      <p>• Vecinos y zonas de cada país: <b>mledoze/countries</b>, licencia ODbL 1.0.</p>
       <p>• Banderas: imágenes de flagcdn/Flagpedia. ${esc(app.items.filter((i) => i.atribucion).map((i) => i.atribucion).join(" "))}</p>
       <p>• Tipografía de titulares: <b>Inter Display</b>, © The Inter Project Authors, SIL Open Font License 1.1 (fonts/OFL.txt).</p>
       <p>• Curiosidades: escritas a mano en el proyecto; las de las ciudades del mundo, contrastadas con Wikipedia.</p>
