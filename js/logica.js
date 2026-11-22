@@ -1,10 +1,10 @@
 // Lógica de la app sin DOM: sesiones, corrección, progreso local y copias (exportar / importar). Probada en Node con un almacén en memoria.
 import { crearMotor, respuestaTexto } from "./comparar.js";
 import { crearSRS, estadoNuevo, C } from "./srs.js";
-import { fechaMadrid, isoMadrid, esFecha, sha256Hex, clonar, crearAzar } from "./util.js";
+import { fechaMadrid, isoMadrid, esFecha, sha256Hex, clonar, crearAzar, difDias, sumarDias } from "./util.js";
 import { evaluar, actualizar, CRITERIO_VERSION, porId as medallaPorId } from "./logros.js";
 
-export const APP_VERSION = "2.6.0";
+export const APP_VERSION = "2.6.1";
 export const NOVEDADES_VERSION = "2.6.0"; // sube cuando haya novedades que enseñar a quien ya usaba la app
 export const FORMATO = "geomundo-progreso";
 export const VERSION_FORMATO = 1;
@@ -36,12 +36,36 @@ export async function crearApp({ catalogo, almacen, cuarentena = [], imagenes = 
     return t.length ? t : tiposCfg;
   }
   const mezclaActiva = () => Object.fromEntries(tiposActivos().filter((T) => mezclaCfg[T]).map((T) => [T, mezclaCfg[T]]));
-  /** Tope de ítems «a medio aprender», proporcional al peso de las categorías activas (mínimo 10). */
-  function tope() {
+  /** Máximo de ítems «a medio aprender» según las categorías activas: proporcional a su peso en la mezcla (mínimo 10). */
+  function topeMaximo() {
     const base = config?.max_aprendiendo; if (!base) return 0;
     const peso = (l) => l.reduce((a, T) => a + (mezclaCfg[T] ?? 0), 0), total = peso(tiposCfg);
     return total ? Math.min(base, Math.max(10, Math.round((base * peso(tiposActivos())) / total))) : base;
   }
+  /** Tope dinámico. Mira los 7 días ANTERIORES a hoy (así no cambia a mitad del día):
+   *  - ritmo: unas 3 piezas a medio aprender por cada pregunta que respondes de media al día (mínimo, una sesión diaria;
+   *    si hoy llevas más que tu media, cuenta lo de hoy: el tope puede subir durante el día, pero no bajar);
+   *  - acierto: el objetivo es ~80 % en los repasos; por debajo se frena la entrada de nuevos, por encima se acelera
+   *    (factor entre 0,7 y 1,2; solo con 20 respuestas o más, si no, neutro).
+   *  Siempre entre 10 y el máximo de las categorías activas. Bajarlo no borra nada: solo pausa la entrada de nuevos. */
+  function topeInfo() {
+    const maximo = topeMaximo(); if (!maximo) return { tope: 0, maximo: 0 };
+    const h = hoy(), desde = sumarDias(h, -7), act = new Set(tiposActivos());
+    let n = 0, ok = 0, deHoy = 0;
+    for (const [i, r] of Object.entries(d.estado?.items ?? {})) {
+      if (!P.has(i) || !act.has(P.get(i).tipo)) continue;
+      for (const [f, v] of r.historial ?? []) { if (f >= desde && f < h) { n++; ok += v; } else if (f === h) deHoy++; }
+    }
+    const dias = (d.estado?.dias_activos ?? []).filter((f) => f < h).sort();
+    const ventana = dias.length ? Math.min(7, Math.max(1, difDias(h, dias[0]))) : 0;
+    // lo jugado hoy solo puede subirlo (quien se pega un atracón hoy no se queda sin nuevos), nunca bajarlo
+    const porDia = Math.max(preguntasSesion(), ventana ? n / ventana : 0, deHoy);
+    const acierto = n >= 20 ? (100 * ok) / n : null;
+    const factor = acierto === null ? 1 : Math.min(1.2, Math.max(0.7, 1 + (acierto - 80) / 50));
+    const tope = Math.max(10, Math.min(maximo, Math.round(Math.min(maximo, 3 * porDia) * factor)));
+    return { tope, maximo, porDia: Math.round(porDia), acierto: acierto === null ? null : Math.round(acierto), factor };
+  }
+  const tope = () => topeInfo().tope;
   const preguntasSesion = () => (d.prefs?.preguntas === 10 ? 10 : 5);
   const corregirCada = () => d.prefs?.corregir_cada !== false;
 
@@ -86,7 +110,7 @@ export async function crearApp({ catalogo, almacen, cuarentena = [], imagenes = 
     excluidos,
     get tipos() { return tiposActivos(); },
     tiposTodos: tiposCfg,
-    tope, preguntasSesion, corregirCada,
+    tope, topeInfo, topeMaximo, preguntasSesion, corregirCada,
 
     async empezarDeCero() { d.estado = estadoNuevo(); d.prefs = { ...d.prefs, novedades_vistas: NOVEDADES_VERSION, bienvenida_pendiente: true }; await guardar(["estado", "prefs"]); },
 

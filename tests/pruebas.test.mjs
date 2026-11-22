@@ -276,7 +276,7 @@ async function appConfig(cuando = "2026-11-21T09:00:00Z") {
 test("2.6 por defecto: sesiones de 5, corrección en cada pregunta, todas las categorías, tope 60", async () => {
   const app = await appConfig();
   assert.equal(app.preguntasSesion(), 5); assert.equal(app.corregirCada(), true);
-  assert.deepEqual(app.tipos, app.tiposTodos); assert.equal(app.tope(), 60);
+  assert.deepEqual(app.tipos, app.tiposTodos); assert.equal(app.topeMaximo(), 60); assert.equal(app.tope(), 15); // sin historial: una sesión de 5 al día → 3 × 5
   const { sesion } = await app.sesionActual();
   assert.equal(sesion.preguntas.length, 5);
   for (let j = 0; j + 1 < 5; j++) assert.notEqual(sesion.preguntas[j].tipo, sesion.preguntas[j + 1].tipo);
@@ -297,7 +297,7 @@ test("2.6 solo Estados de EE. UU.: solo salen estados, tope 10, y el resto del p
   const { sesion } = await app.sesionActual(); for (const q of sesion.preguntas) await app.responder(q.n, resp(app, q.n));
   const antes = Object.keys(app.estado().items).length;
   await app.guardarPrefs({ tipos: ["estado"] });
-  assert.deepEqual(app.tipos, ["estado"]); assert.equal(app.tope(), 10);
+  assert.deepEqual(app.tipos, ["estado"]); assert.equal(app.topeMaximo(), 10); assert.equal(app.tope(), 10);
   let hechas = 0;
   for (let k = 0; k < 6; k++) {
     const { sesion: s } = await app.sesionActual(); if (!s) break; // tope alcanzado y nada pendiente: por hoy se acabó
@@ -309,7 +309,7 @@ test("2.6 solo Estados de EE. UU.: solo salen estados, tope 10, y el resto del p
   await app.guardarPrefs({ tipos: [] }); assert.deepEqual(app.tipos, app.tiposTodos); // nunca ninguna: vuelven todas
 });
 test("2.6 tope proporcional: países + banderas = 30", async () => {
-  const app = await appConfig(); await app.guardarPrefs({ tipos: ["pais", "bandera"] }); assert.equal(app.tope(), 30);
+  const app = await appConfig(); await app.guardarPrefs({ tipos: ["pais", "bandera"] }); assert.equal(app.topeMaximo(), 30); assert.ok(app.tope() <= 30);
 });
 test("2.6 los ajustes viajan con la copia de progreso", async () => {
   const app = await appConfig(); await app.guardarPrefs({ tipos: ["pais", "espana"], preguntas: 10, corregir_cada: false });
@@ -334,4 +334,29 @@ test("desafío: no toca la repetición espaciada; 3 vidas; récord por dificulta
   assert.equal(await app.cerrarPartida(p), true); assert.equal(app.records().facil.puntos, 4);
   const q = app.nuevaPartida("facil", ["pais"]); q.puntos = 3; assert.equal(await app.cerrarPartida(q), false);
   assert.equal(app.records().facil.puntos, 4); assert.equal(app.records().dificil, undefined);
+});
+
+test("tope dinámico: sube con el ritmo, baja si aciertas poco, entre 10 y el máximo, y no cambia a mitad del día", async () => {
+  let ahora = new Date("2026-11-10T09:00:00Z");
+  const config = JSON.parse(fs.readFileSync(new URL("../data/config.json", import.meta.url), "utf8"));
+  const app = await crearApp({ catalogo, almacen: almacenMemoria(), cuarentena, config, ahora: () => ahora });
+  await app.empezarDeCero();
+  const pais = app.items.filter((i) => i.tipo === "pais").slice(0, 40), st = app.estado();
+  // 7 días con 40 respuestas al día (90 % de aciertos)
+  for (let k = 1; k <= 7; k++) { const f = `2026-11-${String(9 + k).padStart(2, "0")}`; st.dias_activos.push(f);
+    pais.forEach((it, j) => { const r = (st.items[it.id] ??= { ef: 2.5, reps: 1, intervalo: 4, vence: "2026-12-30" }); (r.historial ??= []).push([f, j % 10 ? 1 : 0]); }); }
+  ahora = new Date("2026-11-17T09:00:00Z");
+  let t = app.topeInfo(); assert.equal(t.porDia, 40); assert.equal(t.acierto, 90); assert.equal(t.tope, 60); // 3×40 = 120 → máximo 60, ×1,2 → 60
+  // mismo ritmo, pero acertando solo la mitad → frena
+  for (const it of pais) st.items[it.id].historial = st.items[it.id].historial.map(([f], j) => [f, j % 2]);
+  t = app.topeInfo(); assert.ok(t.acierto < 60); assert.equal(t.tope, 42); // 60 × 0,7
+  // lo de hoy no cambia el acierto hasta mañana (y con el mismo ritmo, tampoco el tope)
+  for (const it of pais) st.items[it.id].historial.push(["2026-11-17", 1]);
+  assert.equal(app.topeInfo().tope, 42);
+  // poco ritmo → tope bajo, pero nunca menos de 10
+  for (const it of pais) st.items[it.id].historial = [];
+  assert.equal(app.topeInfo().tope, 15);
+  // atracón hoy: 20 respuestas hoy → el tope sube durante el día (3 × 20 = 60)
+  pais.slice(0, 20).forEach((it) => st.items[it.id].historial.push(["2026-11-17", 1]));
+  assert.equal(app.topeInfo().tope, 60);
 });

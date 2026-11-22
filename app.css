@@ -239,3 +239,4 @@ details summary { cursor: pointer; font-weight: 600; padding: 6px 0; }
 .btn.grande { padding: 18px; font-size: 19px; }
 .fin-juego .btn { margin-top: 10px; }
 .sub-ventana { margin: -4px 0 12px; color: var(--suave); }
+.tope-info { margin-top: 12px; padding: 12px 14px; border-radius: 14px; background: var(--mar2); } .tope-info p { margin: 2px 0; }

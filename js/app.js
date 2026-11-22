@@ -471,7 +471,8 @@ function ajustes() {
     <section class="tarjeta ajuste"><h2>Categorías</h2>
       <ul class="interruptores">${app.tiposTodos.map((T) => { const on = act.includes(T), v = todas[T]; return `<li style="--c:var(--t-${T})"><label><i class="punto"></i><span class="tx"><b>${esc(NOMBRE_CAT[T] ?? T)}</b><small>${v.vistos} vistos de ${v.total}</small></span><input type="checkbox" role="switch" data-t="${T}" ${on ? "checked" : ""} ${on && act.length === 1 ? "disabled" : ""}><i class="sw"></i></label></li>`; }).join("")}</ul>
       <p class="suave">Pausar una categoría no borra nada: sus repasos esperan y vuelven cuando la reactives. Tiene que quedar al menos una.</p>
-      <p class="suave">Sitios nuevos a medio aprender a la vez: hasta <b>${app.tope()}</b>, según las categorías activas.</p></section>
+      ${(() => { const t = app.topeInfo(); return `<div class="tope-info"><p><b>Sitios a medio aprender a la vez: hasta ${t.tope}</b></p>
+        <p class="suave">Se ajusta solo cada día: sube cuanto más juegas${t.porDia ? ` (ahora, unas ${t.porDia} preguntas al día)` : ""} y frena si aciertas menos del 80 %${t.acierto !== null ? ` (llevas un ${t.acierto} % esta semana)` : ""}. Así lo nuevo no tapa lo que estás aprendiendo. Máximo con tus categorías: ${t.maximo}.</p></div>`; })()}</section>
     <section class="tarjeta ajuste"><h2>Tu progreso</h2>
       <p class="suave">Se guarda solo en este móvil. Descarga una copia de vez en cuando o para pasarlo a otro dispositivo.</p>
       <button class="btn" data-ir="progreso">Descargar o cargar copia</button></section>
