@@ -361,21 +361,25 @@ test("tope dinámico: sube con el ritmo, baja si aciertas poco, entre 10 y el m�
   assert.equal(app.topeInfo().tope, 60);
 });
 
-test("fichas: lo nuevo se enseña antes y pasa al final; lo fallado dos veces seguidas, también", async () => {
+test("fichas: como mucho una por sesión, al final; antes lo que se resiste que lo nuevo", async () => {
   const app = await appConfig();
-  const { sesion } = await app.sesionActual();
-  const q1 = app.preguntaPendiente(); assert.equal(q1.modo, "nuevo"); assert.equal(app.necesitaFicha(q1), "nuevo");
-  const id = q1.id, nuevoN = await app.marcarFicha(q1.n);
+  await app.sesionActual();
+  const ses0 = app.sesion(); assert.ok(ses0.preguntas.filter((x) => x.modo === "nuevo").length >= 2);
+  const q1 = app.preguntaPendiente(); assert.equal(app.necesitaFicha(q1), "nuevo");
+  const id = q1.id, n = await app.marcarFicha(q1.n);
   const ses = app.sesion();
-  assert.equal(ses.preguntas[ses.preguntas.length - 1].id, id); assert.equal(nuevoN, 5);
+  assert.equal(ses.preguntas[ses.preguntas.length - 1].id, id); assert.equal(n, 5);
   assert.deepEqual(ses.preguntas.map((x) => x.n), [1, 2, 3, 4, 5]);
-  assert.equal(app.necesitaFicha(ses.preguntas[4]), null); // ya vista
-  // fallo doble → refuerzo
-  const st = app.estado(); st.items["pc-ne"] = { ef: 2.3, reps: 0, intervalo: 1, vence: "2026-11-21", historial: [["2026-11-19", 0], ["2026-11-20", 0]] };
-  assert.equal(app.necesitaFicha({ id: "pc-ne", modo: "repaso", n: 1 }), "refuerzo");
-  st.items["pc-ne"].historial.push(["2026-11-21", 1]);
-  assert.equal(app.necesitaFicha({ id: "pc-ne", modo: "repaso", n: 1 }), null);
-  // responder sigue funcionando tras reordenar
+  for (const q of ses.preguntas) assert.equal(app.necesitaFicha(q), null); // ya hubo una: ninguna más
   for (const q of [...app.sesion().preguntas]) await app.responder(q.n, "no sé");
   assert.equal(app.preguntaPendiente(), null);
+  // sesión con varios que se resisten: solo el primero lleva ficha, aunque haya nuevos antes
+  const st = app.estado();
+  const malos = app.sesion().preguntas.map((x) => x.id);
+  for (const i of malos) st.items[i].historial = [["2026-11-19", 0], ["2026-11-20", 0]];
+  app.datos.sesion = { sesion: "ses-x", fecha: "2026-11-21", preguntas: [
+    { n: 1, id: "pc-fr", tipo: "pais", modo: "nuevo", corregida: false },
+    ...malos.slice(0, 3).map((i, k) => ({ n: k + 2, id: i, tipo: app.P.get(i).tipo, modo: "repaso", corregida: false })) ] };
+  const ps = app.sesion().preguntas;
+  assert.equal(app.necesitaFicha(ps[0]), null); assert.equal(app.necesitaFicha(ps[1]), "refuerzo"); assert.equal(app.necesitaFicha(ps[2]), null);
 });
