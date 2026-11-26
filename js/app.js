@@ -5,7 +5,7 @@ import { NOMBRE_TIPO, C } from "./srs.js";
 import { horaMadrid, difDias, sumarDias } from "./util.js";
 import { pantallaMedallas, celebrar } from "./medallas_ui.js";
 import { MEDALLAS } from "./logros.js";
-import { zonas, opciones, dificiles, rondaZona, nuevaRonda, responderRonda } from "./entreno.js";
+import { opciones, rondaEntreno, nuevaRonda, responderRonda } from "./entreno.js";
 import { crearAzar } from "./util.js";
 
 const $ = (s) => document.querySelector(s);
@@ -499,45 +499,30 @@ function lanzarConfeti() {
   document.body.append(c); setTimeout(() => c.remove(), 4000);
 }
 
-// ---------- entrenamiento: 4 opciones para lo que cuesta ----------
-const misDificiles = () => dificiles(app.estado(), app.P, app.excluidosBase(), 10);
+// ---------- entrenamiento: 4 opciones con lo que tienes a medio aprender ----------
 function tarjetaEntreno() {
-  const n = misDificiles().length;
+  const n = app.srs.enAprendizajeTotal(app.estado() ?? { items: {} }, app.tipos);
   return `<button class="tarjeta desafio-card entreno-card" data-ir="entreno">
       <span class="ico">🧠</span>
-      <span class="tx"><b>Entrenamiento</b><small>${n ? `Elige entre 4. Tienes <b>${n}</b> que se te resisten` : "Elige entre 4 y aprende a distinguir"}</small></span>
+      <span class="tx"><b>Entrenamiento</b><small>${n ? `10 preguntas de elegir entre 4 con tus <b>${n}</b> a medio aprender` : "10 preguntas de elegir entre 4. Adelántate a lo que viene"}</small></span>
       <span class="ir">Entrenar</span></button>`;
 }
-function empezarRonda(ids, origen) {
-  if (!ids.length) return avisar("No hay nada que entrenar aquí todavía.", null, null, 4000);
-  ronda = { ...nuevaRonda(ids), origen, rng: crearAzar("entreno-" + Date.now()) };
+function empezarRonda(ids) {
+  if (!ids.length) return avisar("Ahora mismo no hay nada que entrenar.", null, null, 4000);
+  ronda = { ...nuevaRonda(ids), rng: crearAzar("entreno-" + Date.now()) };
   ir("entrenoPregunta");
 }
-function entreno() {
-  const dif = misDificiles(), modo = app.datos.prefs?.entreno_modo === "bandera" ? "bandera" : "pais", ex = app.excluidosBase();
-  const Z = zonas(app.items, vecinos);
-  vista.innerHTML = `
-    <h1>Entrenamiento</h1>
-    <p class="suave">Eliges entre 4 opciones, y las trampas son sus vecinos: así aprendes a distinguirlos. Lo que fallas vuelve al final de la ronda. No cuenta para tus repasos.</p>
-    <section class="tarjeta ajuste"><h2>Mis difíciles</h2>
-      ${dif.length ? `<p class="suave">${esc(lista(dif.slice(0, 6).map((i) => app.P.get(i).nombre)))}${dif.length > 6 ? "…" : ""}</p>
-      <button class="btn prim" id="dif">Entrenar mis ${dif.length} difíciles</button>` : `<p class="suave">Aún no tienes nada que se te resista. ¡Bien! Prueba por zonas.</p>`}
-    </section>
-    <section class="tarjeta ajuste"><h2>Por zona</h2>
-      <div class="seg" role="radiogroup" aria-label="Qué entrenar">${[["pais", "Países"], ["bandera", "Banderas"]].map(([k, n]) => `<button role="radio" aria-checked="${k === modo}" data-m="${k}">${n}</button>`).join("")}</div>
-      ${Z.map((g) => `<h3 class="grupo">${g.grupo}</h3><div class="chips-zona">${g.zonas.map((z) => `<button class="chip-zona" data-z="${esc(z.zona)}">${esc(z.zona.replace(/^(el|la|los|las) /, "").replace(/^./, (c) => c.toUpperCase()))}<small>${z.ids.length}</small></button>`).join("")}</div>`).join("")}
-    </section>`;
-  $("#dif")?.addEventListener("click", () => empezarRonda(dif, { tipo: "dif" }));
-  vista.querySelectorAll("[data-m]").forEach((b) => (b.onclick = async () => { await app.guardarPrefs({ entreno_modo: b.dataset.m }); entreno(); }));
-  vista.querySelectorAll("[data-z]").forEach((b) => (b.onclick = () => empezarRonda(rondaZona(b.dataset.z, modo, app.items, vecinos, ex, crearAzar("z" + Date.now())), { tipo: "zona", zona: b.dataset.z, modo })));
+function nuevaRondaEntreno() {
+  return rondaEntreno({ estado: app.estado(), P: app.P, activos: app.tipos, excluir: app.excluidos(), proximos: app.proximosNuevos(), rng: crearAzar("r-" + Date.now()) });
 }
+function entreno() { empezarRonda(nuevaRondaEntreno()); }
 function preguntaEntreno(it) {
   if (it.tipo === "pais") return "¿Qué país es?";
   if (it.tipo === "bandera") return "¿De qué país es esta bandera?";
   return textoCorto(it);
 }
 function entrenoPregunta() {
-  if (!ronda) return ir("entreno");
+  if (!ronda) return ir("inicio");
   const id = ronda.cola[ronda.idx], it = app.P.get(id), ops = opciones(it, app.items, vecinos, app.P, ronda.rng), repite = ronda.primera[id] === false;
   const aciertos = Object.values(ronda.primera).filter(Boolean).length;
   vista.innerHTML = `
@@ -563,20 +548,19 @@ function entrenoPregunta() {
   }));
 }
 function entrenoFin() {
-  if (!ronda) return ir("entreno");
+  if (!ronda) return ir("inicio");
   const ids = Object.keys(ronda.primera), bien = ids.filter((i) => ronda.primera[i]), mal = ids.filter((i) => !ronda.primera[i]);
   vista.innerHTML = `
     <section class="tarjeta ruta fin-juego">
-      <p class="fecha">Entrenamiento${ronda.origen.zona ? " · " + esc(ronda.origen.zona) : " · Mis difíciles"}</p>
+      <p class="fecha">Entrenamiento</p>
       <p class="cifra-grande"><b>${bien.length}</b><span>de ${ids.length}<br>a la primera</span></p>
       <p class="titular">${mal.length === 0 ? "¡Pleno! 🎯" : bien.length >= ids.length * 0.7 ? "¡Muy bien!" : "Vas cogiéndolo"}</p>
-      ${mal.length ? `<p class="estado">Para la próxima: ${esc(lista(mal.map((i) => app.P.get(i).nombre)))}.</p><button class="btn prim" id="fallados">Repetir los ${mal.length} fallados</button>` : ""}
-      <button class="btn ${mal.length ? "" : "prim"}" id="otra">Otra ronda</button>
+      ${mal.length ? `<p class="estado">Para la próxima: ${esc(lista(mal.map((i) => app.P.get(i).nombre)))}.</p>` : ""}
+      <button class="btn prim" id="otra">Otra ronda</button>
       <button class="btn" data-ir="inicio">Volver al inicio</button>
     </section>`;
   if (!mal.length) lanzarConfeti();
-  $("#fallados")?.addEventListener("click", () => empezarRonda(mal, ronda.origen));
-  $("#otra").onclick = () => { const o = ronda.origen; if (o.tipo === "zona") empezarRonda(rondaZona(o.zona, o.modo, app.items, vecinos, app.excluidosBase(), crearAzar("z" + Date.now())), o); else ir("entreno"); };
+  $("#otra").onclick = () => empezarRonda(nuevaRondaEntreno());
 }
 
 // ---------- ajustes ----------

@@ -294,5 +294,19 @@ export function crearSRS(items, motor) {
     };
   }
 
-  return { enAprendizajeTotal, seleccionar, crearSesion, corregir, estadisticas, nivelAbierto, nuevasPermitidas, retroalimentacion };
+  /** Próximos sitios nuevos, más o menos en el orden en que irán saliendo en las sesiones:
+   *  cada categoría en su orden de niveles, intercaladas según el peso de la mezcla. */
+  function ordenNuevos(st, tipos, mezcla, excluir = new Set(), limite = 200) {
+    const colas = Object.fromEntries(tipos.map((T) => [T, ordenados[T].filter((it) => !(it.id in st.items) && !excluir.has(it.id))]));
+    const peso = Object.fromEntries(tipos.map((T) => [T, mezcla[T] ?? 1])), credito = Object.fromEntries(tipos.map((T) => [T, 0])), out = [];
+    while (out.length < limite) {
+      const vivos = tipos.filter((T) => colas[T].length); if (!vivos.length) break;
+      const total = vivos.reduce((a, T) => a + peso[T], 0);
+      for (const T of vivos) credito[T] += peso[T];
+      const T = vivos.reduce((a, b) => (credito[b] > credito[a] ? b : a));
+      credito[T] -= total; out.push(colas[T].shift().id);
+    }
+    return out;
+  }
+  return { enAprendizajeTotal, seleccionar, crearSesion, corregir, estadisticas, nivelAbierto, nuevasPermitidas, retroalimentacion, ordenNuevos };
 }

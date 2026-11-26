@@ -4,7 +4,7 @@ import { crearSRS, estadoNuevo, C } from "./srs.js";
 import { fechaMadrid, isoMadrid, esFecha, sha256Hex, clonar, crearAzar, difDias, sumarDias } from "./util.js";
 import { evaluar, actualizar, CRITERIO_VERSION, porId as medallaPorId } from "./logros.js";
 
-export const APP_VERSION = "2.8.0";
+export const APP_VERSION = "2.8.1";
 export const NOVEDADES_VERSION = "2.7.0"; // sube cuando haya novedades que enseñar a quien ya usaba la app
 export const FORMATO = "geomundo-progreso";
 export const VERSION_FORMATO = 1;
@@ -108,6 +108,7 @@ export async function crearApp({ catalogo, almacen, cuarentena = [], imagenes = 
     estadisticas: () => srs.estadisticas(d.estado ?? estadoNuevo(), hoy(), tiposActivos()),
     estadisticasTodas: () => srs.estadisticas(d.estado ?? estadoNuevo(), hoy(), tiposCfg),
     excluidos, excluidosBase,
+    proximosNuevos: (limite = 40) => srs.ordenNuevos(d.estado ?? estadoNuevo(), tiposActivos(), mezclaActiva(), excluidos(), limite),
     get tipos() { return tiposActivos(); },
     tiposTodos: tiposCfg,
     tope, topeInfo, topeMaximo, preguntasSesion, corregirCada,

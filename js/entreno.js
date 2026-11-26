@@ -5,18 +5,6 @@ const GRUPO = (zona) => (/África/.test(zona) || /norte de África|sur de Áfric
   : /Europa|europa/.test(zona) ? "Europa" : /Asia|Asiático|Oriente/.test(zona) ? "Asia"
   : /América|Caribe|Sudamérica|Centroamérica|Norteamérica/.test(zona) ? "América" : "Oceanía");
 
-/** Zonas de países, agrupadas por continente: [{grupo, zonas:[{zona, ids}]}] */
-export function zonas(items, vecinos) {
-  const porZona = new Map();
-  for (const it of items) if (it.tipo === "pais" && vecinos[it.id]?.zona) {
-    const z = vecinos[it.id].zona; if (!porZona.has(z)) porZona.set(z, []); porZona.get(z).push(it.id);
-  }
-  const grupos = new Map();
-  for (const [zona, ids] of porZona) { const g = GRUPO(zona); if (!grupos.has(g)) grupos.set(g, []); grupos.get(g).push({ zona, ids }); }
-  const orden = ["África", "América", "Asia", "Europa", "Oceanía"];
-  return orden.filter((g) => grupos.has(g)).map((g) => ({ grupo: g, zonas: grupos.get(g).sort((a, b) => a.zona.localeCompare(b.zona, "es")) }));
-}
-
 const paisDe = (it) => (it.tipo === "pais" ? it.id : it.tipo === "bandera" ? "pc-" + it.iso : null);
 
 /** Cuatro opciones (nombres) para un ítem, con la correcta incluida y barajadas. */
@@ -41,25 +29,6 @@ export function opciones(it, items, vecinos, P, rng) {
   return rng.shuffle([it.nombre, ...elegidas]);
 }
 
-/** Lo que más te cuesta, según tu historial: fallos recientes, poco acierto y lo que aún no se ha asentado. */
-export function dificiles(estado, P, excluir = new Set(), n = 10) {
-  const out = [];
-  for (const [id, r] of Object.entries(estado?.items ?? {})) {
-    if (!P.has(id) || excluir.has(id)) continue;
-    const h = r.historial ?? []; if (!h.length) continue;
-    const ult = h.slice(-6), fallos = ult.filter((x) => !x[1]).length, acierto = h.filter((x) => x[1]).length / h.length;
-    if (!fallos || (acierto >= 0.75 && (r.reps ?? 0) >= 2)) continue;
-    out.push([fallos * 2 + ((r.reps ?? 0) === 0 ? 2 : 0) + (1 - acierto) * 3 + (h[h.length - 1][1] ? 0 : 1), id]);
-  }
-  return out.sort((a, b) => b[0] - a[0] || (a[1] < b[1] ? -1 : 1)).slice(0, n).map((x) => x[1]);
-}
-
-/** Ronda de una zona: países (mapa) o sus banderas. */
-export function rondaZona(zona, modo, items, vecinos, excluir, rng, n = 10) {
-  const ids = items.filter((it) => it.tipo === "pais" && vecinos[it.id]?.zona === zona).map((it) => (modo === "bandera" ? "ba-" + it.iso : it.id));
-  return rng.shuffle(ids.filter((id) => !excluir.has(id) && items.some((x) => x.id === id))).slice(0, n);
-}
-
 /** Estado de una ronda: cola de ids; lo fallado vuelve al final hasta acertarlo. */
 export function nuevaRonda(ids) { return { cola: [...ids], total: ids.length, idx: 0, primera: {}, repeticiones: {} }; }
 /** Anota la respuesta. Un fallo vuelve al final de la ronda (como mucho dos veces por sitio, para no hacerla eterna). */
@@ -68,4 +37,19 @@ export function responderRonda(ronda, id, ok) {
   ronda.idx++;
   if (!ok && (ronda.repeticiones[id] ?? 0) < 2) { ronda.repeticiones[id] = (ronda.repeticiones[id] ?? 0) + 1; ronda.cola.push(id); }
   return { fin: ronda.idx >= ronda.cola.length };
+}
+
+/** Ronda de entrenamiento sin elegir nada:
+ *  1) lo que tienes a medio aprender (sin acertar o acertado una sola vez), lo que más se resiste primero;
+ *  2) si no llega, los próximos sitios nuevos en el orden en que te irán saliendo (te adelantas);
+ *  3) si aún falta, repaso de lo ya asentado. */
+export function rondaEntreno({ estado, P, activos, excluir, proximos, rng, n = 10 }) {
+  const items = Object.entries(estado?.items ?? {}).filter(([id]) => P.has(id) && activos.includes(P.get(id).tipo) && !excluir.has(id));
+  const urgencia = ([, r]) => { const h = r.historial ?? [], ult = h.slice(-6), fallos = ult.filter((x) => !x[1]).length;
+    return ((r.reps ?? 0) === 0 ? 3 : 0) + fallos * 2 + (h.length && !h[h.length - 1][1] ? 1 : 0) + rng.random() * 1.5; };
+  const medio = items.filter(([, r]) => (r.reps ?? 0) < 2).map((x) => [urgencia(x), x[0]]).sort((a, b) => b[0] - a[0]).map((x) => x[1]);
+  const out = medio.slice(0, n);
+  for (const id of proximos) { if (out.length >= n) break; if (!out.includes(id)) out.push(id); }
+  if (out.length < n) for (const [id] of rng.shuffle(items.filter(([id, r]) => (r.reps ?? 0) >= 2 && !out.includes(id)))) { if (out.length >= n) break; out.push(id); }
+  return rng.shuffle(out);
 }
