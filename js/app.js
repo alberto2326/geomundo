@@ -5,6 +5,8 @@ import { NOMBRE_TIPO, C } from "./srs.js";
 import { horaMadrid, difDias, sumarDias } from "./util.js";
 import { pantallaMedallas, celebrar } from "./medallas_ui.js";
 import { MEDALLAS } from "./logros.js";
+import { zonas, opciones, dificiles, rondaZona, nuevaRonda, responderRonda } from "./entreno.js";
+import { crearAzar } from "./util.js";
 
 const $ = (s) => document.querySelector(s);
 const vista = $("#vista");
@@ -13,7 +15,7 @@ const fechaCorta = (iso, hoy) => { const d = difDias(iso, hoy); return d === 0 ?
 const fechaLarga = (iso) => new Date(iso + "T12:00:00Z").toLocaleDateString("es-ES", { weekday: "long", day: "numeric", month: "long", timeZone: "UTC" });
 const MODO = { nuevo: "nuevo", repaso: "repaso", practica: "práctica extra" };
 const NOMBRE_CAT = { pais: "Países y capitales", bandera: "Banderas", fisico: "Geografía física", espana: "España", estado: "Estados de EE. UU.", ciudad: "Ciudades del mundo" };
-let app, imagenes = null, persistente = null, ultimaRetro = null, partida = null, vecinos = {};
+let app, imagenes = null, persistente = null, ultimaRetro = null, partida = null, vecinos = {}, ronda = null;
 
 
 // ---------- arranque ----------
@@ -95,7 +97,7 @@ function avisar(texto, boton, accion, ms = 0) {
 }
 function ir(pantalla, ...args) {
   if (!app.tieneProgreso() && !["bienvenida", "progreso"].includes(pantalla)) pantalla = "bienvenida";
-  ({ inicio, bienvenida, pregunta, correccion, hoja, resumen, estadisticas, progreso, ajustes, desafio, juego, finJuego, medallas: () => pantallaMedallas(app, vista) })[pantalla](...args);
+  ({ inicio, bienvenida, pregunta, correccion, hoja, resumen, estadisticas, progreso, ajustes, desafio, juego, finJuego, entreno, entrenoPregunta, entrenoFin, medallas: () => pantallaMedallas(app, vista) })[pantalla](...args);
   document.querySelectorAll(".barra nav button").forEach((b) => (b.dataset.ir === pantalla ? b.setAttribute("aria-current", "page") : b.removeAttribute("aria-current")));
   window.scrollTo(0, 0); vista.focus({ preventScroll: true });
 }
@@ -182,6 +184,7 @@ function inicio() {
     </section>
     ${chips}
     ${tarjetaDesafio()}
+    ${tarjetaEntreno()}
     <section class="tarjeta atlas">
       <h2>Tu atlas</h2>
       <ul class="tipos">${filas}</ul>
@@ -494,6 +497,86 @@ function lanzarConfeti() {
   const col = ["#e0353b", "#1e6e9e", "#ffd000", "#23866b", "#e2772c", "#5a5fc8"];
   c.innerHTML = Array.from({ length: 60 }, (_, i) => `<i style="left:${Math.random() * 100}%;background:${col[i % 6]};animation-duration:${1.6 + Math.random() * 1.6}s;animation-delay:${Math.random() * .4}s"></i>`).join("");
   document.body.append(c); setTimeout(() => c.remove(), 4000);
+}
+
+// ---------- entrenamiento: 4 opciones para lo que cuesta ----------
+const misDificiles = () => dificiles(app.estado(), app.P, app.excluidosBase(), 10);
+function tarjetaEntreno() {
+  const n = misDificiles().length;
+  return `<button class="tarjeta desafio-card entreno-card" data-ir="entreno">
+      <span class="ico">🧠</span>
+      <span class="tx"><b>Entrenamiento</b><small>${n ? `Elige entre 4. Tienes <b>${n}</b> que se te resisten` : "Elige entre 4 y aprende a distinguir"}</small></span>
+      <span class="ir">Entrenar</span></button>`;
+}
+function empezarRonda(ids, origen) {
+  if (!ids.length) return avisar("No hay nada que entrenar aquí todavía.", null, null, 4000);
+  ronda = { ...nuevaRonda(ids), origen, rng: crearAzar("entreno-" + Date.now()) };
+  ir("entrenoPregunta");
+}
+function entreno() {
+  const dif = misDificiles(), modo = app.datos.prefs?.entreno_modo === "bandera" ? "bandera" : "pais", ex = app.excluidosBase();
+  const Z = zonas(app.items, vecinos);
+  vista.innerHTML = `
+    <h1>Entrenamiento</h1>
+    <p class="suave">Eliges entre 4 opciones, y las trampas son sus vecinos: así aprendes a distinguirlos. Lo que fallas vuelve al final de la ronda. No cuenta para tus repasos.</p>
+    <section class="tarjeta ajuste"><h2>Mis difíciles</h2>
+      ${dif.length ? `<p class="suave">${esc(lista(dif.slice(0, 6).map((i) => app.P.get(i).nombre)))}${dif.length > 6 ? "…" : ""}</p>
+      <button class="btn prim" id="dif">Entrenar mis ${dif.length} difíciles</button>` : `<p class="suave">Aún no tienes nada que se te resista. ¡Bien! Prueba por zonas.</p>`}
+    </section>
+    <section class="tarjeta ajuste"><h2>Por zona</h2>
+      <div class="seg" role="radiogroup" aria-label="Qué entrenar">${[["pais", "Países"], ["bandera", "Banderas"]].map(([k, n]) => `<button role="radio" aria-checked="${k === modo}" data-m="${k}">${n}</button>`).join("")}</div>
+      ${Z.map((g) => `<h3 class="grupo">${g.grupo}</h3><div class="chips-zona">${g.zonas.map((z) => `<button class="chip-zona" data-z="${esc(z.zona)}">${esc(z.zona.replace(/^(el|la|los|las) /, "").replace(/^./, (c) => c.toUpperCase()))}<small>${z.ids.length}</small></button>`).join("")}</div>`).join("")}
+    </section>`;
+  $("#dif")?.addEventListener("click", () => empezarRonda(dif, { tipo: "dif" }));
+  vista.querySelectorAll("[data-m]").forEach((b) => (b.onclick = async () => { await app.guardarPrefs({ entreno_modo: b.dataset.m }); entreno(); }));
+  vista.querySelectorAll("[data-z]").forEach((b) => (b.onclick = () => empezarRonda(rondaZona(b.dataset.z, modo, app.items, vecinos, ex, crearAzar("z" + Date.now())), { tipo: "zona", zona: b.dataset.z, modo })));
+}
+function preguntaEntreno(it) {
+  if (it.tipo === "pais") return "¿Qué país es?";
+  if (it.tipo === "bandera") return "¿De qué país es esta bandera?";
+  return textoCorto(it);
+}
+function entrenoPregunta() {
+  if (!ronda) return ir("entreno");
+  const id = ronda.cola[ronda.idx], it = app.P.get(id), ops = opciones(it, app.items, vecinos, app.P, ronda.rng), repite = ronda.primera[id] === false;
+  const aciertos = Object.values(ronda.primera).filter(Boolean).length;
+  vista.innerHTML = `
+    <div class="marcador"><span class="pts">Entrenamiento · <b>${Math.min(ronda.idx + 1, ronda.cola.length)}</b>/${ronda.cola.length}</span><span class="pts">✓ <b>${aciertos}</b></span></div>
+    ${repite ? `<p class="sello-ficha otra-vez">🔁 Otra vez: este lo fallaste antes</p>` : ""}
+    <p class="pregunta">${esc(preguntaEntreno(it))}</p>
+    ${imagenes?.[it.id]?.q ? `<div class="imgs una-test"><figure><img src="${esc(imagenes[it.id].q)}" alt="Imagen de la pregunta" decoding="async"></figure></div>` : imgsHTML(it)}
+    <div class="opciones-test">${ops.map((o) => `<button class="opcion-test" data-o="${esc(o)}">${esc(o)}</button>`).join("")}</div>
+    <div id="fb"></div>`;
+  zoomImgs();
+  vista.querySelectorAll(".opcion-test").forEach((b) => (b.onclick = () => {
+    const ok = b.dataset.o === it.nombre, { fin } = responderRonda(ronda, id, ok);
+    vista.querySelectorAll(".opcion-test").forEach((x) => { x.disabled = true; if (x.dataset.o === it.nombre) x.classList.add("bien"); });
+    if (!ok) b.classList.add("mal");
+    const pista = it.tipo === "pais" ? pistaPais(it.id) : it.tipo === "bandera" ? pistaPais("pc-" + it.iso) : "";
+    $("#fb").innerHTML = `<div class="resultado ${ok ? "ok" : "mal"}"><h2>${ok ? "✅ ¡Eso es!" : `Era ${esc(it.nombre)}`}</h2>
+        ${it.capitales ? `<p>Capital: <b>${esc(it.capitales.map((c) => c.nombre).join(" / "))}</b></p>` : ""}
+        ${pista ? `<p class="suave">📍 ${esc(pista.trim())}</p>` : ""}${!ok ? `<p class="suave">Te lo volvemos a preguntar al final.</p>` : ""}</div>
+      ${ok ? "" : imgsHTML(it, true)}
+      <button class="btn prim" id="sig">${fin ? "Ver resultado" : "Siguiente"}</button>`;
+    zoomImgs(); $("#sig").onclick = () => (fin ? ir("entrenoFin") : entrenoPregunta());
+    $("#sig").scrollIntoView({ block: "nearest", behavior: "smooth" });
+  }));
+}
+function entrenoFin() {
+  if (!ronda) return ir("entreno");
+  const ids = Object.keys(ronda.primera), bien = ids.filter((i) => ronda.primera[i]), mal = ids.filter((i) => !ronda.primera[i]);
+  vista.innerHTML = `
+    <section class="tarjeta ruta fin-juego">
+      <p class="fecha">Entrenamiento${ronda.origen.zona ? " · " + esc(ronda.origen.zona) : " · Mis difíciles"}</p>
+      <p class="cifra-grande"><b>${bien.length}</b><span>de ${ids.length}<br>a la primera</span></p>
+      <p class="titular">${mal.length === 0 ? "¡Pleno! 🎯" : bien.length >= ids.length * 0.7 ? "¡Muy bien!" : "Vas cogiéndolo"}</p>
+      ${mal.length ? `<p class="estado">Para la próxima: ${esc(lista(mal.map((i) => app.P.get(i).nombre)))}.</p><button class="btn prim" id="fallados">Repetir los ${mal.length} fallados</button>` : ""}
+      <button class="btn ${mal.length ? "" : "prim"}" id="otra">Otra ronda</button>
+      <button class="btn" data-ir="inicio">Volver al inicio</button>
+    </section>`;
+  if (!mal.length) lanzarConfeti();
+  $("#fallados")?.addEventListener("click", () => empezarRonda(mal, ronda.origen));
+  $("#otra").onclick = () => { const o = ronda.origen; if (o.tipo === "zona") empezarRonda(rondaZona(o.zona, o.modo, app.items, vecinos, app.excluidosBase(), crearAzar("z" + Date.now())), o); else ir("entreno"); };
 }
 
 // ---------- ajustes ----------

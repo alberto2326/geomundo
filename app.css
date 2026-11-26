@@ -248,3 +248,18 @@ details summary { cursor: pointer; font-weight: 600; padding: 6px 0; }
 .ficha h1 { font-size: 40px; margin: 6px 0 4px; }
 .ficha .sub { font-size: 18px; margin: 0 0 8px; }
 .ficha .pista { font-size: 15.5px; color: var(--suave); margin: 8px auto 0; max-width: 34ch; line-height: 1.4; }
+
+/* ---- entrenamiento ---- */
+.entreno-card { background: linear-gradient(120deg, color-mix(in srgb, var(--oceano) 12%, var(--papel)), var(--papel) 60%); margin-top: -2px; }
+.entreno-card .ico { background: color-mix(in srgb, var(--oceano) 18%, var(--papel)); }
+.grupo { font-size: 15px; color: var(--suave); margin: 16px 0 8px; font-weight: 700; }
+.chips-zona { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip-zona { border: 1.5px solid var(--borde); background: var(--papel); border-radius: 99px; padding: 9px 14px; font-weight: 650; font-size: 15px; cursor: pointer; display: inline-flex; gap: 8px; align-items: center; }
+.chip-zona small { color: var(--suave); font-weight: 600; font-size: 12.5px; }
+.opciones-test { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 12px 0; }
+.opcion-test { padding: 16px 10px; border-radius: 16px; border: 1.5px solid var(--linea); background: var(--papel); font-weight: 700; font-size: 16px; cursor: pointer; min-height: 64px; }
+.opcion-test.bien { background: var(--okbg); border-color: var(--ok); color: var(--ok); }
+.opcion-test.mal { background: var(--malbg); border-color: var(--mal); color: var(--mal); }
+.opcion-test:disabled { cursor: default; }
+.otra-vez { background: color-mix(in srgb, var(--pin) 14%, var(--papel)); color: var(--pin-osc); display: inline-block; margin: 4px 0 0; padding: 5px 12px; border-radius: 99px; font-size: 14px; font-weight: 700; }
+.una-test img { max-height: 38vh; object-fit: contain; }
