@@ -4,7 +4,7 @@ import { crearSRS, estadoNuevo, C } from "./srs.js";
 import { fechaMadrid, isoMadrid, esFecha, sha256Hex, clonar, crearAzar, difDias, sumarDias } from "./util.js";
 import { evaluar, actualizar, CRITERIO_VERSION, porId as medallaPorId } from "./logros.js";
 
-export const APP_VERSION = "2.8.1";
+export const APP_VERSION = "2.9.0";
 export const NOVEDADES_VERSION = "2.7.0"; // sube cuando haya novedades que enseñar a quien ya usaba la app
 export const FORMATO = "geomundo-progreso";
 export const VERSION_FORMATO = 1;

@@ -5,7 +5,7 @@ import { NOMBRE_TIPO, C } from "./srs.js";
 import { horaMadrid, difDias, sumarDias } from "./util.js";
 import { pantallaMedallas, celebrar } from "./medallas_ui.js";
 import { MEDALLAS } from "./logros.js";
-import { opciones, rondaEntreno, nuevaRonda, responderRonda } from "./entreno.js";
+import { opciones, colaEntreno, nuevaRonda, responderRonda } from "./entreno.js";
 import { crearAzar } from "./util.js";
 
 const $ = (s) => document.querySelector(s);
@@ -499,23 +499,28 @@ function lanzarConfeti() {
   document.body.append(c); setTimeout(() => c.remove(), 4000);
 }
 
-// ---------- entrenamiento: 4 opciones con lo que tienes a medio aprender ----------
+// ---------- entrenamiento: flujo continuo de 4 opciones, sales cuando quieras ----------
 function tarjetaEntreno() {
   const n = app.srs.enAprendizajeTotal(app.estado() ?? { items: {} }, app.tipos);
   return `<button class="tarjeta desafio-card entreno-card" data-ir="entreno">
       <span class="ico">🧠</span>
-      <span class="tx"><b>Entrenamiento</b><small>${n ? `10 preguntas de elegir entre 4 con tus <b>${n}</b> a medio aprender` : "10 preguntas de elegir entre 4. Adelántate a lo que viene"}</small></span>
+      <span class="tx"><b>Entrenamiento</b><small>${n ? `Elige entre 4 con tus <b>${n}</b> a medio aprender. Sal cuando quieras` : "Elige entre 4 y adelántate a lo que viene"}</small></span>
       <span class="ir">Entrenar</span></button>`;
 }
-function empezarRonda(ids) {
-  if (!ids.length) return avisar("Ahora mismo no hay nada que entrenar.", null, null, 4000);
-  ronda = { ...nuevaRonda(ids), rng: crearAzar("entreno-" + Date.now()) };
+/** Lo acertado hoy en el entrenamiento (para mandarlo al final la próxima vez). */
+function acertadosHoy() { const e = app.datos.prefs?.entreno_hoy; return new Set(e?.fecha === app.hoy() ? e.ok : []); }
+async function anotarAcierto(id) {
+  const e = app.datos.prefs?.entreno_hoy, ok = e?.fecha === app.hoy() ? e.ok : [];
+  if (!ok.includes(id)) await app.guardarPrefs({ entreno_hoy: { fecha: app.hoy(), ok: [...ok, id] } });
+}
+function empezarEntreno(modo) {
+  const cola = colaEntreno({ estado: app.estado(), P: app.P, activos: app.tipos, excluir: app.excluidos(), proximos: app.proximosNuevos(), acertadosHoy: acertadosHoy(), modo });
+  if (!cola.length && modo === "medio") return empezarEntreno("proximos");
+  if (!cola.length) { avisar("Ahora mismo no hay nada que entrenar.", null, null, 4000); return ir("inicio"); }
+  ronda = { ...nuevaRonda(cola), modo, rng: crearAzar("entreno-" + Date.now()) };
   ir("entrenoPregunta");
 }
-function nuevaRondaEntreno() {
-  return rondaEntreno({ estado: app.estado(), P: app.P, activos: app.tipos, excluir: app.excluidos(), proximos: app.proximosNuevos(), rng: crearAzar("r-" + Date.now()) });
-}
-function entreno() { empezarRonda(nuevaRondaEntreno()); }
+function entreno() { empezarEntreno("medio"); }
 function preguntaEntreno(it) {
   if (it.tipo === "pais") return "¿Qué país es?";
   if (it.tipo === "bandera") return "¿De qué país es esta bandera?";
@@ -524,15 +529,16 @@ function preguntaEntreno(it) {
 function entrenoPregunta() {
   if (!ronda) return ir("inicio");
   const id = ronda.cola[ronda.idx], it = app.P.get(id), ops = opciones(it, app.items, vecinos, app.P, ronda.rng), repite = ronda.primera[id] === false;
-  const aciertos = Object.values(ronda.primera).filter(Boolean).length;
+  const aciertos = Object.values(ronda.primera).filter(Boolean).length, quedan = ronda.cola.length - ronda.idx;
   vista.innerHTML = `
-    <div class="marcador"><span class="pts">Entrenamiento · <b>${Math.min(ronda.idx + 1, ronda.cola.length)}</b>/${ronda.cola.length}</span><span class="pts">✓ <b>${aciertos}</b></span></div>
+    <div class="marcador"><span class="pts">✓ <b>${aciertos}</b> · quedan ${quedan}</span><button class="btn salir" id="salir">Salir</button></div>
     ${repite ? `<p class="sello-ficha otra-vez">🔁 Otra vez: este lo fallaste antes</p>` : ""}
     <p class="pregunta">${esc(preguntaEntreno(it))}</p>
     ${imagenes?.[it.id]?.q ? `<div class="imgs una-test"><figure><img src="${esc(imagenes[it.id].q)}" alt="Imagen de la pregunta" decoding="async"></figure></div>` : imgsHTML(it)}
     <div class="opciones-test">${ops.map((o) => `<button class="opcion-test" data-o="${esc(o)}">${esc(o)}</button>`).join("")}</div>
     <div id="fb"></div>`;
   zoomImgs();
+  $("#salir").onclick = () => salirEntreno();
   vista.querySelectorAll(".opcion-test").forEach((b) => (b.onclick = () => {
     const ok = b.dataset.o === it.nombre, { fin } = responderRonda(ronda, id, ok);
     vista.querySelectorAll(".opcion-test").forEach((x) => { x.disabled = true; if (x.dataset.o === it.nombre) x.classList.add("bien"); });
@@ -543,24 +549,32 @@ function entrenoPregunta() {
         ${pista ? `<p class="suave">📍 ${esc(pista.trim())}</p>` : ""}${!ok ? `<p class="suave">Te lo volvemos a preguntar al final.</p>` : ""}</div>
       ${ok ? "" : imgsHTML(it, true)}
       <button class="btn prim" id="sig">${fin ? "Ver resultado" : "Siguiente"}</button>`;
+    if (ok) anotarAcierto(id); // acertado hoy (a la primera o al repetir): la próxima vez, al final de la cola
     zoomImgs(); $("#sig").onclick = () => (fin ? ir("entrenoFin") : entrenoPregunta());
     $("#sig").scrollIntoView({ block: "nearest", behavior: "smooth" });
   }));
 }
+function salirEntreno() {
+  const ids = Object.keys(ronda?.primera ?? {}), bien = ids.filter((i) => ronda.primera[i]).length;
+  ronda = null; ir("inicio");
+  if (ids.length) avisar(`Entrenamiento: ${bien} de ${ids.length} a la primera.`, null, null, 4000);
+}
 function entrenoFin() {
   if (!ronda) return ir("inicio");
-  const ids = Object.keys(ronda.primera), bien = ids.filter((i) => ronda.primera[i]), mal = ids.filter((i) => !ronda.primera[i]);
+  const ids = Object.keys(ronda.primera), bien = ids.filter((i) => ronda.primera[i]), mal = ids.filter((i) => !ronda.primera[i]), medio = ronda.modo === "medio";
   vista.innerHTML = `
     <section class="tarjeta ruta fin-juego">
       <p class="fecha">Entrenamiento</p>
-      <p class="cifra-grande"><b>${bien.length}</b><span>de ${ids.length}<br>a la primera</span></p>
-      <p class="titular">${mal.length === 0 ? "¡Pleno! 🎯" : bien.length >= ids.length * 0.7 ? "¡Muy bien!" : "Vas cogiéndolo"}</p>
-      ${mal.length ? `<p class="estado">Para la próxima: ${esc(lista(mal.map((i) => app.P.get(i).nombre)))}.</p>` : ""}
-      <button class="btn prim" id="otra">Otra ronda</button>
-      <button class="btn" data-ir="inicio">Volver al inicio</button>
+      <p class="titular">${medio ? "¡Vuelta completa! 🎉" : "¡Te has adelantado! 🚀"}</p>
+      <p class="estado">${medio ? `Has repasado todos tus sitios a medio aprender: ${bien.length} de ${ids.length} a la primera.` : `${bien.length} de ${ids.length} a la primera.`}</p>
+      ${mal.length ? `<p class="suave">Para la próxima: ${esc(lista(mal.slice(0, 8).map((i) => app.P.get(i).nombre)))}${mal.length > 8 ? "…" : ""}.</p>` : ""}
+      ${medio ? `<button class="btn prim" id="otra">Otra vuelta</button><button class="btn" id="prox">Adelantarme con lo próximo</button>` : `<button class="btn prim" id="prox">Seguir adelantándome</button>`}
+      <button class="btn" id="fin">Salir</button>
     </section>`;
   if (!mal.length) lanzarConfeti();
-  $("#otra").onclick = () => empezarRonda(nuevaRondaEntreno());
+  $("#otra")?.addEventListener("click", () => empezarEntreno("medio"));
+  $("#prox").onclick = () => empezarEntreno("proximos");
+  $("#fin").onclick = () => { ronda = null; ir("inicio"); };
 }
 
 // ---------- ajustes ----------

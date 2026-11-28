@@ -29,27 +29,28 @@ export function opciones(it, items, vecinos, P, rng) {
   return rng.shuffle([it.nombre, ...elegidas]);
 }
 
-/** Estado de una ronda: cola de ids; lo fallado vuelve al final hasta acertarlo. */
-export function nuevaRonda(ids) { return { cola: [...ids], total: ids.length, idx: 0, primera: {}, repeticiones: {} }; }
-/** Anota la respuesta. Un fallo vuelve al final de la ronda (como mucho dos veces por sitio, para no hacerla eterna). */
-export function responderRonda(ronda, id, ok) {
-  if (!(id in ronda.primera)) ronda.primera[id] = ok;
-  ronda.idx++;
-  if (!ok && (ronda.repeticiones[id] ?? 0) < 2) { ronda.repeticiones[id] = (ronda.repeticiones[id] ?? 0) + 1; ronda.cola.push(id); }
-  return { fin: ronda.idx >= ronda.cola.length };
+/** Cola del entrenamiento continuo.
+ *  modo "medio": todo lo que tienes a medio aprender (sin acertar o acertado una vez), de lo que más fallas a lo que menos;
+ *  lo que ya acertaste HOY en el entrenamiento va al final, para que no salgan siempre los mismos.
+ *  modo "proximos": los próximos sitios nuevos, en el orden en que irán saliendo en las sesiones. */
+export function colaEntreno({ estado, P, activos, excluir, proximos = [], acertadosHoy = new Set(), modo = "medio", n = 20 }) {
+  if (modo === "proximos") return proximos.slice(0, n);
+  const items = Object.entries(estado?.items ?? {}).filter(([id, r]) => P.has(id) && activos.includes(P.get(id).tipo) && !excluir.has(id) && (r.reps ?? 0) < 2);
+  const dificultad = ([id, r]) => { const h = r.historial ?? [], fallos = h.slice(-6).filter((x) => !x[1]).length, acierto = h.length ? h.filter((x) => x[1]).length / h.length : 0;
+    return fallos * 2 + ((r.reps ?? 0) === 0 ? 3 : 0) + (1 - acierto) * 2 + (h.length && !h[h.length - 1][1] ? 1 : 0); };
+  return items.map((x) => [acertadosHoy.has(x[0]) ? 1 : 0, -dificultad(x), x[0]])
+    .sort((a, b) => a[0] - b[0] || a[1] - b[1] || (a[2] < b[2] ? -1 : 1)).map((x) => x[2]);
 }
 
-/** Ronda de entrenamiento sin elegir nada:
- *  1) lo que tienes a medio aprender (sin acertar o acertado una sola vez), lo que más se resiste primero;
- *  2) si no llega, los próximos sitios nuevos en el orden en que te irán saliendo (te adelantas);
- *  3) si aún falta, repaso de lo ya asentado. */
-export function rondaEntreno({ estado, P, activos, excluir, proximos, rng, n = 10 }) {
-  const items = Object.entries(estado?.items ?? {}).filter(([id]) => P.has(id) && activos.includes(P.get(id).tipo) && !excluir.has(id));
-  const urgencia = ([, r]) => { const h = r.historial ?? [], ult = h.slice(-6), fallos = ult.filter((x) => !x[1]).length;
-    return ((r.reps ?? 0) === 0 ? 3 : 0) + fallos * 2 + (h.length && !h[h.length - 1][1] ? 1 : 0) + rng.random() * 1.5; };
-  const medio = items.filter(([, r]) => (r.reps ?? 0) < 2).map((x) => [urgencia(x), x[0]]).sort((a, b) => b[0] - a[0]).map((x) => x[1]);
-  const out = medio.slice(0, n);
-  for (const id of proximos) { if (out.length >= n) break; if (!out.includes(id)) out.push(id); }
-  if (out.length < n) for (const [id] of rng.shuffle(items.filter(([id, r]) => (r.reps ?? 0) >= 2 && !out.includes(id)))) { if (out.length >= n) break; out.push(id); }
-  return rng.shuffle(out);
+/** Estado del entrenamiento: cola de ids y lo respondido. */
+export function nuevaRonda(ids) { return { cola: [...ids], idx: 0, primera: {}, repeticiones: {} }; }
+/** Anota la respuesta. Un fallo vuelve unas preguntas más tarde (como mucho dos veces por sitio). */
+export function responderRonda(ronda, id, ok, hueco = 4) {
+  if (!(id in ronda.primera)) ronda.primera[id] = ok;
+  ronda.idx++;
+  if (!ok && (ronda.repeticiones[id] ?? 0) < 2) {
+    ronda.repeticiones[id] = (ronda.repeticiones[id] ?? 0) + 1;
+    ronda.cola.splice(Math.min(ronda.cola.length, ronda.idx + hueco), 0, id);
+  }
+  return { fin: ronda.idx >= ronda.cola.length };
 }

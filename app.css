@@ -263,3 +263,4 @@ details summary { cursor: pointer; font-weight: 600; padding: 6px 0; }
 .opcion-test:disabled { cursor: default; }
 .otra-vez { background: color-mix(in srgb, var(--pin) 14%, var(--papel)); color: var(--pin-osc); display: inline-block; margin: 4px 0 0; padding: 5px 12px; border-radius: 99px; font-size: 14px; font-weight: 700; }
 .una-test img { max-height: 38vh; object-fit: contain; }
+.btn.salir { width: auto; margin: 0; padding: 8px 16px; font-size: 15px; }
