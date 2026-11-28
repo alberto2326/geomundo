@@ -521,6 +521,24 @@ function empezarEntreno(modo) {
   ir("entrenoPregunta");
 }
 function entreno() { empezarEntreno("medio"); }
+/** Imagen de la pregunta; si hay vista cercana y de contexto, en un carrusel deslizable con pestañas. */
+function carruselEntreno(it) {
+  const im = imagenes?.[it.id] ?? {};
+  if (!im.q) return imgsHTML(it);
+  if (!(it.imagenes === "cercana+contexto" && im.c)) return `<div class="imgs una-test"><figure><img src="${esc(im.q)}" alt="Imagen de la pregunta" decoding="async"></figure></div>`;
+  return `<div class="carrusel">
+      <div class="pestanas" role="tablist"><button role="tab" aria-selected="true" data-i="0">Cerca</button><button role="tab" aria-selected="false" data-i="1">Mapa general</button></div>
+      <div class="pista-car">${[[im.q, "Vista cercana"], [im.c, "Mapa general"]].map(([src, alt]) => `<figure><img src="${esc(src)}" alt="${alt}" decoding="async"></figure>`).join("")}</div>
+    </div>`;
+}
+function activarCarrusel() {
+  const c = vista.querySelector(".carrusel"); if (!c) return;
+  const pista = c.querySelector(".pista-car"), tabs = [...c.querySelectorAll("[data-i]")];
+  const marcar = (i) => tabs.forEach((t, k) => t.setAttribute("aria-selected", String(k === i)));
+  tabs.forEach((t) => (t.onclick = () => { pista.scrollTo({ left: pista.clientWidth * Number(t.dataset.i), behavior: "smooth" }); marcar(Number(t.dataset.i)); }));
+  pista.addEventListener("scroll", () => marcar(Math.round(pista.scrollLeft / Math.max(1, pista.clientWidth))), { passive: true });
+  pista.querySelectorAll("img").forEach((img) => (img.onclick = () => { $("#zoom img").src = img.src; $("#zoom").hidden = false; }));
+}
 function preguntaEntreno(it) {
   if (it.tipo === "pais") return "¿Qué país es?";
   if (it.tipo === "bandera") return "¿De qué país es esta bandera?";
@@ -534,10 +552,10 @@ function entrenoPregunta() {
     <div class="marcador"><span class="pts">✓ <b>${aciertos}</b> · quedan ${quedan}</span><button class="btn salir" id="salir">Salir</button></div>
     ${repite ? `<p class="sello-ficha otra-vez">🔁 Otra vez: este lo fallaste antes</p>` : ""}
     <p class="pregunta">${esc(preguntaEntreno(it))}</p>
-    ${imagenes?.[it.id]?.q ? `<div class="imgs una-test"><figure><img src="${esc(imagenes[it.id].q)}" alt="Imagen de la pregunta" decoding="async"></figure></div>` : imgsHTML(it)}
+    ${carruselEntreno(it)}
     <div class="opciones-test">${ops.map((o) => `<button class="opcion-test" data-o="${esc(o)}">${esc(o)}</button>`).join("")}</div>
     <div id="fb"></div>`;
-  zoomImgs();
+  zoomImgs(); activarCarrusel();
   $("#salir").onclick = () => salirEntreno();
   vista.querySelectorAll(".opcion-test").forEach((b) => (b.onclick = () => {
     const ok = b.dataset.o === it.nombre, { fin } = responderRonda(ronda, id, ok);
